@@ -1645,6 +1645,9 @@ class MysqlProxy(SocketServer.BaseRequestHandler):
             self.answer_select(query)
         elif type(statement) == Explain:
             self.answer_explain_table(statement.target.parts)
+        elif keyword == 'begin':
+            # skip this query
+            self.packet(OkPacket).send()
         else:
             log.warning(f'Unknown SQL statement: {sql}')
             raise ErNotSupportedYet(f'Unknown SQL statement: {sql}')
