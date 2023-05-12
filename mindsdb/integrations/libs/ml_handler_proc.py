@@ -81,9 +81,7 @@ class MLHandlerProcess:
         length = struct.unpack('L', length_enc)[0]
 
         encoded = self.stdin.read(length)
-        obj = pickle.loads(encoded)
-
-        return obj
+        return pickle.loads(encoded)
 
     def init_handler(self, class_path, integration_id, predictor_id, context_dump):
         # mdb initialization
@@ -190,10 +188,7 @@ def process_keeper():
         try:
             ret = method(*args, **kwargs)
 
-        except RuntimeError as e:
-            ret = e
         except Exception as e:
-            # TODO to something else?
             ret = e
         queue_in.task_done()
         queue_out.put(ret)

@@ -101,7 +101,7 @@ class VerticaHandler(DatabaseHandler):
                 e=cur.execute(query)
                 result = e.fetchall()
                 if e.rowcount != -1:
-                    
+
                     response = Response(
                         RESPONSE_TYPE.TABLE,
                         pd.DataFrame(
@@ -120,7 +120,7 @@ class VerticaHandler(DatabaseHandler):
                 )
                 connection.rollback()
 
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
 
         return response

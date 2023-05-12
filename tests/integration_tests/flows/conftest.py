@@ -13,7 +13,7 @@ import pandas as pd
 from mindsdb.utilities.ps import get_child_pids
 
 
-HTTP_API_ROOT = f'http://127.0.0.1:47334/api'
+HTTP_API_ROOT = 'http://127.0.0.1:47334/api'
 USE_PERSISTENT_STORAGE = bool(int(os.getenv('USE_PERSISTENT_STORAGE') or "0"))
 TEST_CONFIG = os.path.dirname(os.path.realpath(__file__)) + '/config/config.json'
 TEMP_DIR = Path(__file__).parent.absolute().joinpath('../../').joinpath(
@@ -56,26 +56,22 @@ def config(temp_dir):
     See 'scope' fixture parameter.
     """
     if os.environ.get("MICROSERVICE_MODE", False):
-        config_json = {
-                "api":
-                {
-                    "http": {
-                        "host": "127.0.0.1",
-                        "port": 47334,
-                    },
-                    "mysql": {
-                        "host": "127.0.0.1",
-                        "port": 47335,
-                    },
-
-                    "mongodb": {
-                        "host": "127.0.0.1",
-                        "port": 47336,
-                    },
-                }
+        return {
+            "api": {
+                "http": {
+                    "host": "127.0.0.1",
+                    "port": 47334,
+                },
+                "mysql": {
+                    "host": "127.0.0.1",
+                    "port": 47335,
+                },
+                "mongodb": {
+                    "host": "127.0.0.1",
+                    "port": 47336,
+                },
+            }
         }
-        return config_json
-
     with open(TEST_CONFIG, 'rt') as f:
         config_json = json.loads(f.read())
         config_json['storage_dir'] = f'{TEMP_DIR}'
@@ -87,12 +83,11 @@ def config(temp_dir):
 def override_recursive(a, b):
     """Overrides some elements in json 'a' by elements in json 'b'"""
     for key in b:
-        if isinstance(b[key], dict) is False:
+        if not isinstance(b[key], dict):
             a[key] = b[key]
-        elif key not in a or isinstance(a[key], dict) is False:
+        elif key not in a or not isinstance(a[key], dict):
             a[key] = b[key]
-        # make config section empty by demand
-        elif isinstance(b[key], dict) is True and b[key] == {}:
+        elif b[key] == {}:
             a[key] = b[key]
         else:
             override_recursive(a[key], b[key])
@@ -108,10 +103,7 @@ def mindsdb_app(request, config):
     else:
 
         apis = getattr(request.module, "API_LIST", [])
-        if not apis:
-            api_str = "http,mysql"
-        else:
-            api_str = ",".join(apis)
+        api_str = "http,mysql" if not apis else ",".join(apis)
         to_override_conf = getattr(request.module, "OVERRIDE_CONFIG", {})
         if to_override_conf:
             override_recursive(config, to_override_conf)
@@ -146,7 +138,7 @@ def mindsdb_app(request, config):
                 raise Exception("unable to launch mindsdb app in 60 seconds")
 
     def cleanup():
-        print(f"Stopping Application")
+        print("Stopping Application")
         if os.environ.get("MICROSERVICE_MODE", False):
             cmd = 'docker-compose -f ./docker/docker-compose-ci.yml down'
             subprocess.run(cmd, shell=True)
@@ -155,6 +147,7 @@ def mindsdb_app(request, config):
             for ch in get_child_pids(app.pid):
                 ch.kill()
             app.kill()
+
     request.addfinalizer(cleanup)
     return
 

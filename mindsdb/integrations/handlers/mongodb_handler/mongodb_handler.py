@@ -94,9 +94,9 @@ class MongoDBHandler(DatabaseHandler):
             log.logger.error(f'Error connecting to MongoDB {self.database}, {e}!')
             result.error_message = str(e)
 
-        if result.success is True and need_to_close:
+        if result.success and need_to_close:
             self.disconnect()
-        if result.success is False and self.is_connected is True:
+        if not result.success and self.is_connected is True:
             self.is_connected = False
 
         return result
@@ -137,11 +137,9 @@ class MongoDBHandler(DatabaseHandler):
                 fnc = getattr(cursor, step['method'])
                 cursor = fnc(*step['args'])
 
-            result = []
-            for row in cursor:
-                result.append(self.flatten(row, level=self.flatten_level))
-
-            if len(result) > 0:
+            if result := [
+                self.flatten(row, level=self.flatten_level) for row in cursor
+            ]:
                 df = pd.DataFrame(result)
             else:
                 columns = list(self.get_columns(collection).data_frame.Field)
@@ -171,11 +169,10 @@ class MongoDBHandler(DatabaseHandler):
             # convert objectId to string
             if isinstance(v, ObjectId):
                 edit_keys[k] = str(v)
-            if level > 0:
-                if isinstance(v, dict):
-                    for k2, v2 in self.flatten(v, level=level - 1).items():
-                        add[f'{k}.{k2}'] = v2
-                    del_keys.append(k)
+            if level > 0 and isinstance(v, dict):
+                for k2, v2 in self.flatten(v, level=level - 1).items():
+                    add[f'{k}.{k2}'] = v2
+                del_keys.append(k)
         if add:
             row.update(add)
         for key in del_keys:
@@ -204,12 +201,7 @@ class MongoDBHandler(DatabaseHandler):
         ]
         df = pd.DataFrame(collections_ar, columns=['table_name'])
 
-        response = Response(
-            RESPONSE_TYPE.TABLE,
-            df
-        )
-
-        return response
+        return Response(RESPONSE_TYPE.TABLE, df)
 
     def get_columns(self, collection) -> Response:
         """
@@ -222,14 +214,8 @@ class MongoDBHandler(DatabaseHandler):
         if record is not None:
             record = self.flatten(record)
 
-            for k, v in record.items():
-                data.append([k, type(v).__name__])
-
+            data.extend([k, type(v).__name__] for k, v in record.items())
         df = pd.DataFrame(data, columns=['Field', 'Type'])
 
-        response = Response(
-            RESPONSE_TYPE.TABLE,
-            df
-        )
-        return response
+        return Response(RESPONSE_TYPE.TABLE, df)
 

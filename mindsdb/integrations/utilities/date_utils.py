@@ -45,7 +45,7 @@ def interval_str_to_duration_ms(interval_str: str) -> int:
     duration_match = re.search(r'^\d+', interval_str)
     time_unit_match = re.search('[smhdw]', interval_str)
     if not duration_match or not time_unit_match:
-        raise ValueError('Invalid interval {}'.format(interval_str))
+        raise ValueError(f'Invalid interval {interval_str}')
     duration = int(duration_match.group())
     time_unit = time_unit_match.group()
     if time_unit == 's':

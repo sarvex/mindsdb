@@ -92,9 +92,9 @@ class TeradataHandler(DatabaseHandler):
             log.logger.error(f'Error connecting to Teradata {self.host}, {e}!')
             response.error_message = e
 
-        if response.success is True and need_to_close:
+        if response.success and need_to_close:
             self.disconnect()
-        if response.success is False and self.is_connected is True:
+        if not response.success and self.is_connected is True:
             self.is_connected = False
 
         return response
@@ -133,7 +133,7 @@ class TeradataHandler(DatabaseHandler):
                 )
                 connection.rollback()
 
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
 
         return response
@@ -152,7 +152,9 @@ class TeradataHandler(DatabaseHandler):
         """
 
         return self.native_query(
-            str(text(f"""
+            str(
+                text(
+                    """
             SELECT DataBaseName,
                    TableName,
                    TableKind
@@ -161,9 +163,13 @@ class TeradataHandler(DatabaseHandler):
             AND (TableKind = 'T'
                 OR TableKind = 'O'
                 OR TableKind = 'Q')
-            """).bindparams(
-                bindparam('database', value=self.database, type_=String)
-            ).compile(compile_kwargs={"literal_binds": True}))
+            """
+                )
+                .bindparams(
+                    bindparam('database', value=self.database, type_=String)
+                )
+                .compile(compile_kwargs={"literal_binds": True})
+            )
         )
 
     def get_columns(self, table_name: str) -> Response:
@@ -174,16 +180,22 @@ class TeradataHandler(DatabaseHandler):
         """
 
         return self.native_query(
-            str(text(f"""
+            str(
+                text(
+                    """
             SELECT ColumnName AS "Field",
                    ColumnType AS "Type"
             FROM DBC.ColumnsV
             WHERE DatabaseName (NOT CASESPECIFIC) = :database
             AND TableName (NOT CASESPECIFIC) = :table_name
-            """).bindparams(
-                bindparam('database', value=self.database, type_=String),
-                bindparam('table_name', value=table_name, type_=String)
-            ).compile(compile_kwargs={"literal_binds": True}))
+            """
+                )
+                .bindparams(
+                    bindparam('database', value=self.database, type_=String),
+                    bindparam('table_name', value=table_name, type_=String),
+                )
+                .compile(compile_kwargs={"literal_binds": True})
+            )
         )
 
 

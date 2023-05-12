@@ -17,10 +17,11 @@ from mindsdb_sql.render.sqlalchemy_render import SqlalchemyRender
 def unload_module(path):
     # remove all modules started with path
     import sys
-    to_remove = []
-    for module_name in sys.modules:
-        if module_name.startswith(path + '.') or module_name == path:
-            to_remove.append(module_name)
+    to_remove = [
+        module_name
+        for module_name in sys.modules
+        if module_name.startswith(path + '.') or module_name == path
+    ]
     to_remove.sort(reverse=True)
     for module_name in to_remove:
         sys.modules.pop(module_name)
@@ -364,9 +365,7 @@ class BaseExecutorMockPredictor(BaseExecutorTest):
                 row[f'{target}_explain'] = str(exp_row)
 
 
-            if pred_format == 'explain':
-                return explain_arr
-            return pd.DataFrame(data)
+            return explain_arr if pred_format == 'explain' else pd.DataFrame(data)
 
         predictor_record = {
             'version': None, 'is_active': None,

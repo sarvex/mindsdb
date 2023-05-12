@@ -92,8 +92,7 @@ def get_best_model_from_results_df(nixtla_results_df, metric=r2_score):
 def spec_hierarchy_from_list(col_list):
     """Gets the hierarchy spec from the list of hierarchy cols"""
     spec = [["Total"]]
-    for i in range(len(col_list)):
-        spec.append(["Total"] + col_list[: i + 1])
+    spec.extend(["Total"] + col_list[: i + 1] for i in range(len(col_list)))
     return spec
 
 
@@ -139,10 +138,9 @@ def get_results_from_reconciled_df(reconciled_df, hierarchy_df):
     """
     #  Drop unnecessary columns
     for col in reconciled_df.columns:
-        if col not in ["ds", "y"]:
-            if "BottomUp" not in col:
-                results_df = reconciled_df.drop(col, axis=1)  # removes original forecast column
-                break
+        if col not in ["ds", "y"] and "BottomUp" not in col:
+            results_df = reconciled_df.drop(col, axis=1)  # removes original forecast column
+            break
 
     #  Drop higher-level rows
     lowest_level_ids = hierarchy_df.columns

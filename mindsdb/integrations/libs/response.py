@@ -37,14 +37,7 @@ class HandlerResponse:
                  "error": self.error_message}
 
     def __repr__(self):
-        return "%s: resp_type=%s, query=%s, data_frame=%s, err_code=%s, error=%s" % (
-                self.__class__.__name__,
-                self.resp_type,
-                self.query,
-                self.data_frame,
-                self.error_code,
-                self.error_message
-            )
+        return f"{self.__class__.__name__}: resp_type={self.resp_type}, query={self.query}, data_frame={self.data_frame}, err_code={self.error_code}, error={self.error_message}"
 
 class HandlerStatusResponse:
     def __init__(self, success: bool = True, error_message: str = None) -> None:
@@ -78,10 +71,4 @@ class ExecutorResponse:
                  "error": self.error_message}
 
     def __repr__(self):
-        return "%s: resp_type=%s, query=%s, err_code=%s, error=%s" % (
-                self.__class__.__name__,
-                self.resp_type,
-                self.query,
-                self.error_code,
-                self.error_message,
-            )
+        return f"{self.__class__.__name__}: resp_type={self.resp_type}, query={self.query}, err_code={self.error_code}, error={self.error_message}"

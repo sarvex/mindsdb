@@ -21,16 +21,8 @@ def get_logs(min_timestamp, max_timestamp, context, level, log_from, limit):
     if max_timestamp is not None:
         logs = logs.filter(db.Log.created_at < max_timestamp)
 
-    if context is not None:
-        # e.g. datasource/predictor and assoicated id
-        pass
-
     if level is not None:
         logs = logs.filter(db.Log.log_type == level)
-
-    if log_from is not None:
-        # mindsdb/native/lightwood/all
-        pass
 
     if limit is not None:
         logs = logs.limit(limit)

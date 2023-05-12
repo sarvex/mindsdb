@@ -54,10 +54,15 @@ class Test(BaseExecutorMockPredictor):
         # --- inline prediction ---
         self.mock_predict.reset_mock()
 
-        ret = self.command_executor.execute_command(parse_sql(f'''
+        ret = self.command_executor.execute_command(
+            parse_sql(
+                '''
             select * from mindsdb.task_model where a = 2
             using p1=1, p2=[1,2] 
-        ''', dialect='mindsdb'))
+        ''',
+                dialect='mindsdb',
+            )
+        )
 
         predict_args = self.mock_predict.call_args[0][1]
         assert predict_args['predict_params'] == {'p1': 1, 'p2': [1,2]}

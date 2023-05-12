@@ -20,12 +20,11 @@ def get_call_args(f_obj):
 
 
 def get_public_api(obj):
-    res = {}
-    for attr_name, attr in obj.__dict__.items():
-        if not attr_name.startswith("_"):
-            if callable(attr):
-                res[attr_name] = attr
-    return res
+    return {
+        attr_name: attr
+        for attr_name, attr in obj.__dict__.items()
+        if not attr_name.startswith("_") and callable(attr)
+    }
 
 
 @pytest.mark.parametrize(

@@ -22,8 +22,7 @@ class TDEngineHandlerTest(unittest.TestCase):
     def test_2_create_table(self):
         query = "CREATE Table `hari` USING `temp` (`id`) TAGS (0);"
         result = self.handler.query(query)
-        assert result.type is not RESPONSE_TYPE.ERROR 
-        pass
+        assert result.type is not RESPONSE_TYPE.ERROR
 
     def test_3_insert(self):
         query = "INSERT INTO hari  VALUES (NOW, 12);"

@@ -30,8 +30,9 @@ def query_df(df, query, session=None):
     else:
         query_ast = copy.deepcopy(query)
 
-    if isinstance(query_ast, Select) is False \
-       or isinstance(query_ast.from_table, Identifier) is False:
+    if not isinstance(query_ast, Select) or not isinstance(
+        query_ast.from_table, Identifier
+    ):
         raise Exception(
             "Only 'SELECT from TABLE' statements supported for internal query"
         )
@@ -41,16 +42,12 @@ def query_df(df, query, session=None):
     def adapt_query(node, is_table, **kwargs):
         if is_table:
             return
-        if isinstance(node, Identifier):
-            if len(node.parts) > 1:
-                node.parts = [node.parts[-1]]
-                return node
+        if isinstance(node, Identifier) and len(node.parts) > 1:
+            node.parts = [node.parts[-1]]
+            return node
         if isinstance(node, Function):
             if node.op.lower() == 'database' and len(node.args) == 0:
-                if session is not None:
-                    cur_db = session.database
-                else:
-                    cur_db = None
+                cur_db = session.database if session is not None else None
                 return Constant(cur_db)
             if node.op.lower() == 'truncate':
                 # replace mysql 'truncate' function to duckdb 'round'

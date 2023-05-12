@@ -1016,15 +1016,16 @@ def VAR_NAME(val, prefix=''):
 
     for key in ALL.keys():
         value = ALL[key]
-        if value == val and key != 'val':
-            if prefix == '' or (prefix != '' and prefix == key[:len(prefix)]):
-                return key
+        if (
+            value == val
+            and key != 'val'
+            and prefix in ['', key[: len(prefix)]]
+        ):
+            return key
     return None
 
 
 def getConstName(consts, value):
     attrs = [x for x in dir(consts) if x.startswith('__') is False]
     constNames = {getattr(consts, x): x for x in attrs}
-    if value in constNames:
-        return constNames[value]
-    return None
+    return constNames.get(value, None)

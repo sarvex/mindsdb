@@ -90,9 +90,9 @@ class SheetsHandler(DatabaseHandler):
             log.error(f'Error connecting to the Google Sheet with ID {self.connection_data["spreadsheet_id"]}, {e}!')
             response.error_message = str(e)
         finally:
-            if response.success is True and need_to_close:
+            if response.success and need_to_close:
                 self.disconnect()
-            if response.success is False and self.is_connected is True:
+            if not response.success and self.is_connected is True:
                 self.is_connected = False
 
         return response
@@ -125,7 +125,7 @@ class SheetsHandler(DatabaseHandler):
                 error_message=str(e)
             )
 
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
 
         return response
@@ -147,15 +147,12 @@ class SheetsHandler(DatabaseHandler):
         Returns:
             HandlerResponse
         """
-        response = Response(
+        return Response(
             RESPONSE_TYPE.TABLE,
             data_frame=pd.DataFrame(
-                [self.connection_data['sheet_name']],
-                columns=['table_name']
-            )
+                [self.connection_data['sheet_name']], columns=['table_name']
+            ),
         )
-
-        return response
 
     def get_columns(self) -> StatusResponse:
         """
@@ -165,17 +162,15 @@ class SheetsHandler(DatabaseHandler):
         Returns:
             HandlerResponse
         """
-        response = Response(
+        return Response(
             RESPONSE_TYPE.TABLE,
             data_frame=pd.DataFrame(
                 {
                     'column_name': list(self.sheet.columns),
-                    'data_type': self.sheet.dtypes
+                    'data_type': self.sheet.dtypes,
                 }
-            )
+            ),
         )
-
-        return response
 
 
 connection_args = OrderedDict(

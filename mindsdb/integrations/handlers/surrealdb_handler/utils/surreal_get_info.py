@@ -2,12 +2,11 @@ def table_names(connection):
     query = "INFO for DB"
     dict_1 = connection.query(query)
     dict_2 = dict_1['tb']
-    tables = list(dict_2.keys())
-    return tables
+    return list(dict_2.keys())
 
 
 def column_info(connection, table):
-    query = "INFO FOR TABLE " + table
+    query = f"INFO FOR TABLE {table}"
     dict_1 = connection.query(query)
     dict_2 = dict_1['fd']
     columns = list(dict_2.keys())

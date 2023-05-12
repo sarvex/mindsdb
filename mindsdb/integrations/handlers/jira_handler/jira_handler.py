@@ -97,9 +97,9 @@ class JiraHandler(DatabaseHandler):
             log.error(f'Error connecting to Jira portal {self.connection_data["jira_url"]}, {e}!')
             response.error_message = str(e)
         finally:
-            if response.success is True and need_to_close:
+            if response.success and need_to_close:
                 self.disconnect()
-            if response.success is False and self.is_connected is True:
+            if not response.success and self.is_connected is True:
                 self.is_connected = False
 
         return response
@@ -120,10 +120,9 @@ class JiraHandler(DatabaseHandler):
         df = pd.json_normalize(results["issues"])
         fields_name= ["key", "fields.summary","fields.status.name", "fields.reporter.name","fields.assignee.name","fields.priority.name"]
         locals()[self.connection_data['table_name']] = df[fields_name]
-        try:            
-            result = duckdb.query(query)
-            if result:
-                response = Response(RESPONSE_TYPE.TABLE,data_frame=result.df())                   
+        try:        
+            if result := duckdb.query(query):
+                response = Response(RESPONSE_TYPE.TABLE,data_frame=result.df())
             else:
                 response = Response(RESPONSE_TYPE.OK)
 
@@ -133,8 +132,8 @@ class JiraHandler(DatabaseHandler):
                 RESPONSE_TYPE.ERROR,
                 error_message=str(e)
             )
-        
-        if need_to_close is True:
+
+        if need_to_close:
             self.disconnect()
 
         return response
@@ -158,15 +157,12 @@ class JiraHandler(DatabaseHandler):
             HandlerResponse
         """
 
-        response = Response(
+        return Response(
             RESPONSE_TYPE.TABLE,
             data_frame=pd.DataFrame(
-                [self.connection_data['table_name']],
-                columns=['table_name']
-            )
+                [self.connection_data['table_name']], columns=['table_name']
+            ),
         )
-
-        return response
 
     def get_columns(self) -> StatusResponse:
         """
@@ -179,17 +175,15 @@ class JiraHandler(DatabaseHandler):
         query = 'SELECT * FROM '+ str(self.connection_data['table_name'])+ ' LIMIT 10'
         result = self.native_query(query)
 
-        response = Response(
+        return Response(
             RESPONSE_TYPE.TABLE,
             data_frame=pd.DataFrame(
                 {
                     'column_name': result.data_frame.columns,
-                    'data_type': result.data_frame.dtypes
+                    'data_type': result.data_frame.dtypes,
                 }
-            )
+            ),
         )
-
-        return response
 
 
 connection_args = OrderedDict(

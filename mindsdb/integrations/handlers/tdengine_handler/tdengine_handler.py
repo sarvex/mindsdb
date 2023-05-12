@@ -76,9 +76,9 @@ class TDEngineHandler(DatabaseHandler):
             log.error(f'Error connecting to TDEngine {self.connection_data["database"]}, {e}!')
             result.error_message = str(e)
 
-        if result.success is True and need_to_close:
+        if result.success and need_to_close:
             self.disconnect()
-        if result.success is False and self.is_connected is True:
+        if not result.success and self.is_connected is True:
             self.is_connected = False
 
         return result
@@ -93,10 +93,10 @@ class TDEngineHandler(DatabaseHandler):
         need_to_close = self.is_connected is False
 
         connection = self.connect()
-        cur = connection.cursor() 
+        cur = connection.cursor()
         try:
                 cur.execute(query)
-                
+
                 if cur.rowcount != 0:
                     result = cur.fetchall()
                     response = Response(
@@ -117,7 +117,7 @@ class TDEngineHandler(DatabaseHandler):
                 )
                 # connection.rollback()
         cur.close()
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
 
         return response

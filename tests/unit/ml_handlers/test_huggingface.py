@@ -45,7 +45,7 @@ class TestHuggingface(BaseExecutorTest):
 
         # wait
         done = False
-        for attempt in range(900):
+        for _ in range(900):
             ret = self.run_sql(
                 f"select status from mindsdb.models where name='{model_name}'"
             )

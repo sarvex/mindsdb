@@ -51,11 +51,8 @@ def upgrade():
             status = 'error'
         elif 'training_log' in (data or {}):
             status = 'training'
-        elif 'error' not in (data or {}):
-            status = 'complete'
         else:
-            status = 'error'
-
+            status = 'complete'
         conn.execute(
             text("""
                 update predictor

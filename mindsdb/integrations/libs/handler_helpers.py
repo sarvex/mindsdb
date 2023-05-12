@@ -26,7 +26,7 @@ def get_handler(_type):
     # a crutch to fix bug in handler naming convention
     if _type == "files":
         _type = "file"
-    handler_folder_name = _type + "_handler"
+    handler_folder_name = f"{_type}_handler"
     logger.debug("get_handler: handler_folder - %s", handler_folder_name)
 
     try:

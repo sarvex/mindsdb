@@ -52,9 +52,7 @@ def _get_process_mark_id(unified: bool = False) -> str:
             mark of process+thread
     '''
     mark = f'{os.getpid()}-{threading.get_ident()}'
-    if unified is True:
-        return mark
-    return f"{mark}-{str(time.time()).replace('.', '')}"
+    return mark if unified else f"{mark}-{str(time.time()).replace('.', '')}"
 
 
 def create_process_mark(folder='learn'):

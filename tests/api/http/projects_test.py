@@ -17,9 +17,7 @@ def app():
         os.environ['MINDSDB_DB_CON'] = db_path
         db.init()
         migrate.migrate_to_head()
-        app = initialize_app(Config(), True, False)
-
-        yield app
+        yield initialize_app(Config(), True, False)
     os.environ['MINDSDB_DB_CON'] = old_minds_db_con
 
 

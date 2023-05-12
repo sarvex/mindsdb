@@ -220,24 +220,19 @@ class BaseMLEngineExec:
             handlerStorage = HandlerStorage(integration_id)
             modelStorage = ModelStorage(predictor_id)
 
-            ml_handler = self.handler_class(
+            return self.handler_class(
                 engine_storage=handlerStorage,
                 model_storage=modelStorage,
             )
-            return ml_handler
 
     def get_tables(self) -> Response:
         """ Returns all models currently registered that belong to the ML engine."""
         all_models = self.model_controller.get_models(integration_id=self.integration_id)
         all_models_names = [[x['name']] for x in all_models]
-        response = Response(
+        return Response(
             RESPONSE_TYPE.TABLE,
-            pd.DataFrame(
-                all_models_names,
-                columns=['table_name']
-            )
+            pd.DataFrame(all_models_names, columns=['table_name']),
         )
-        return response
 
     def get_columns(self, table_name: str) -> Response:
         """ Retrieves standard info about a model, e.g. data types. """  # noqa
@@ -250,16 +245,11 @@ class BaseMLEngineExec:
 
         data = []
         if predictor_record.dtype_dict is not None:
-            for key, value in predictor_record.dtype_dict.items():
-                data.append((key, value))
-        result = Response(
+            data.extend((key, value) for key, value in predictor_record.dtype_dict.items())
+        return Response(
             RESPONSE_TYPE.TABLE,
-            pd.DataFrame(
-                data,
-                columns=['COLUMN_NAME', 'DATA_TYPE']
-            )
+            pd.DataFrame(data, columns=['COLUMN_NAME', 'DATA_TYPE']),
         )
-        return result
 
     def native_query(self, query: str) -> Response:
         """ Intakes a raw SQL query and returns the answer given by the ML engine. """
@@ -373,7 +363,7 @@ class BaseMLEngineExec:
             predictions = ml_handler.predict(df, args)
         except Exception as e:
             msg = str(e).strip()
-            if msg == '':
+            if not msg:
                 msg = e.__class__.__name__
             msg = f'[{self.name}/{model_name}]: {msg}'
             raise MLEngineException(msg) from e

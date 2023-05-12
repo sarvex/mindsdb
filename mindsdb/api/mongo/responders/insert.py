@@ -81,8 +81,7 @@ class Responce(Responder):
 
             action = doc.pop('action', 'create').lower()
 
-            bad_columns = [x for x in doc if x not in predictors_columns]
-            if len(bad_columns) > 0:
+            if bad_columns := [x for x in doc if x not in predictors_columns]:
                 raise Exception(
                     f"Is no possible insert this columns to 'predictors' collection: {', '.join(bad_columns)}")
 
@@ -165,7 +164,14 @@ class Responce(Responder):
                 mql = parser.from_string(query_str)
 
                 method = mql.pipeline[0]['method']
-                if method == 'find':
+                if method == 'aggregate':
+                    query = {
+                        'aggregate': mql.collection,
+                        'pipeline': mql.pipeline[0]['args'][0]
+                    }
+                    ast_query = aggregate_to_ast(query, request_env.get('database', 'mindsdb'))
+                    query_str = ast_query.to_string()
+                elif method == 'find':
                     args = mql.pipeline[0]['args']
                     projection = None
                     if len(args) > 1:
@@ -187,13 +193,6 @@ class Responce(Responder):
                     ast_query = find_to_ast(query, request_env.get('database', 'mindsdb'))
 
                     # to string
-                    query_str = ast_query.to_string()
-                elif method == 'aggregate':
-                    query = {
-                        'aggregate': mql.collection,
-                        'pipeline': mql.pipeline[0]['args'][0]
-                    }
-                    ast_query = aggregate_to_ast(query, request_env.get('database', 'mindsdb'))
                     query_str = ast_query.to_string()
             except Exception:
                 # keep query
@@ -230,9 +229,7 @@ class Responce(Responder):
                 df = df.drop('_id', axis=1)
 
             data = df.to_dict('split')
-            values = []
-            for row in data['data']:
-                values.append([Constant(i) for i in row])
+            values = [[Constant(i) for i in row] for row in data['data']]
             ast_query = Insert(
                 table=Identifier(table),
                 columns=[TableColumn(c) for c in data['columns']],
@@ -241,12 +238,7 @@ class Responce(Responder):
 
             run_sql_command(request_env, ast_query)
 
-        result = {
-            "n": len(query['documents']),
-            "ok": 1
-        }
-
-        return result
+        return {"n": len(query['documents']), "ok": 1}
 
 
 responder = Responce()

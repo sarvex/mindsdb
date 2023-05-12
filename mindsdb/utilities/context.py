@@ -43,8 +43,7 @@ class Context:
         self._storage.set(storage)
 
     def dump(self) -> dict:
-        storage = deepcopy(self._storage.get({}))
-        return storage
+        return deepcopy(self._storage.get({}))
 
     def load(self, storage: dict) -> None:
         self._storage.set(storage)

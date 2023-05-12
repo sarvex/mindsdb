@@ -16,8 +16,7 @@ class MLClientFactory:
         self.__module__ = self.handler_class.__module__
 
     def __call__(self, engine_storage, model_storage, **kwargs):
-        service_info = self.discover_service(self.engine)
-        if service_info:
+        if service_info := self.discover_service(self.engine):
             host = service_info["host"]
             port = service_info["port"]
         else:
@@ -45,6 +44,4 @@ class MLClientFactory:
             return {}
         discover_url = f"{discover_url}/discover"
         res = discover_services(discover_url)
-        if not res:
-            return {}
-        return res[engine][0]
+        return {} if not res else res[engine][0]

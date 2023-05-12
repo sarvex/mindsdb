@@ -151,18 +151,18 @@ def open_ssh_tunnel(port, direction='R'):
 def stop_mindsdb(ports=None):
     mdb_ports = [47334, 47335, 47336]
     if isinstance(ports, list):
-        mdb_ports = mdb_ports + ports
+        mdb_ports += ports
     procs = [x for x in net_connections() if x.pid is not None and x.laddr[1] in mdb_ports]
     print(f'Found {len(procs)} MindsDB processes')
 
-    if len(procs) == 0:
+    if not procs:
         print('Nothing to close')
         return
 
     for proc in procs:
         print(f' -- {proc.pid} / {proc.laddr[1]} / {proc.status}')
 
-    pid_port = set((x.pid, x.laddr[1]) for x in procs)
+    pid_port = {(x.pid, x.laddr[1]) for x in procs}
 
     interrupted_pids = []
     for pid, port in pid_port:
@@ -181,7 +181,7 @@ def stop_mindsdb(ports=None):
 
     waited_for = 0
     waited_ports = [x for x in net_connections() if x.laddr[1] in mdb_ports]
-    while len(waited_ports) > 0 and waited_for < 30:
+    while waited_ports and waited_for < 30:
         print(f'\nSome mindsdb ports are yet to die, waiting for them to do so: {[(x.pid, x.laddr[1], x.status) for x in waited_ports]}. Waited for a total of: {waited_for} seconds\n')
         time.sleep(2)
         waited_for += 2
@@ -191,10 +191,7 @@ def stop_mindsdb(ports=None):
 
 
 def is_mssql_test():
-    for x in sys.argv:
-        if 'test_mssql.py' in x:
-            return True
-    return False
+    return any('test_mssql.py' in x for x in sys.argv)
 
 
 mindsdb_port = None
@@ -260,12 +257,11 @@ def make_test_csv(name, data):
 
 def override_recursive(a, b):
     for key in b:
-        if isinstance(b[key], dict) is False:
+        if not isinstance(b[key], dict):
             a[key] = b[key]
-        elif key not in a or isinstance(a[key], dict) is False:
+        elif key not in a or not isinstance(a[key], dict):
             a[key] = b[key]
-        # make config section empty by demand
-        elif isinstance(b[key], dict) is True and b[key] == {}:
+        elif b[key] == {}:
             a[key] = b[key]
         else:
             override_recursive(a[key], b[key])
@@ -342,11 +338,9 @@ def get_all_pridict_fields(fields):
     '''
     fieldes = list(fields.keys())
     for field_name, field_type in fields.items():
-        fieldes.append(f'{field_name}_confidence')
-        fieldes.append(f'{field_name}_explain')
+        fieldes.extend((f'{field_name}_confidence', f'{field_name}_explain'))
         if field_type in [int, float]:
-            fieldes.append(f'{field_name}_min')
-            fieldes.append(f'{field_name}_max')
+            fieldes.extend((f'{field_name}_min', f'{field_name}_max'))
     return fieldes
 
 

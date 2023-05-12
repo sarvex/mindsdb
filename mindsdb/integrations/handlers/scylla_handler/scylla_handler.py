@@ -46,21 +46,21 @@ class ScyllaHandler(DatabaseHandler):
         )
 
         connection_props = {
-            'auth_provider': auth_provider
+            'auth_provider': auth_provider,
+            'protocol_version': self.connection_args.get('protocol_version', 4),
         }
-        connection_props['protocol_version'] = self.connection_args.get('protocol_version', 4)
         secure_connect_bundle = self.connection_args.get('secure_connect_bundle')
 
-        if secure_connect_bundle is not None:
-            if os.path.isfile(secure_connect_bundle) is False:
-                raise Exception("Secure_connect_bundle' must be path to the file")
-            connection_props['cloud'] = {
-                'secure_connect_bundle': secure_connect_bundle
-            }
-        else:
+        if secure_connect_bundle is None:
             connection_props['contact_points'] = [self.connection_args['host']]
             connection_props['port'] = int(self.connection_args['port'])
 
+        elif os.path.isfile(secure_connect_bundle) is False:
+            raise Exception("Secure_connect_bundle' must be path to the file")
+        else:
+            connection_props['cloud'] = {
+                'secure_connect_bundle': secure_connect_bundle
+            }
         cluster = Cluster(**connection_props)
         session = cluster.connect(self.connection_args.get('keyspace'))
 
@@ -84,7 +84,7 @@ class ScyllaHandler(DatabaseHandler):
             log.logger.error(f'Error connecting to Scylla {self.connection_args["keyspace"]}, {e}!')
             response.error_message = e
 
-        if response.success is False and self.is_connected is True:
+        if not response.success and self.is_connected is True:
             self.is_connected = False
 
         return response
@@ -110,8 +110,7 @@ class ScyllaHandler(DatabaseHandler):
         session = self.connect()
         try:
             resp = session.execute(query).all()
-            resp = self.prepare_response(resp)
-            if resp:
+            if resp := self.prepare_response(resp):
                 response = Response(
                     RESPONSE_TYPE.TABLE,
                     pd.DataFrame(
@@ -142,9 +141,11 @@ class ScyllaHandler(DatabaseHandler):
             table_name = query.from_table.parts[-1]
 
             for target in query.targets:
-                if isinstance(target, ast.Identifier):
-                    if target.parts[0] == table_name:
-                        target.parts.pop(0)
+                if (
+                    isinstance(target, ast.Identifier)
+                    and target.parts[0] == table_name
+                ):
+                    target.parts.pop(0)
 
         renderer = SqlalchemyRender('mysql')
         query_str = renderer.get_string(query, with_failback=True)
@@ -165,8 +166,7 @@ class ScyllaHandler(DatabaseHandler):
         Show details about the table
         """
         q = f"DESCRIBE {table_name};"
-        result = self.native_query(q)
-        return result
+        return self.native_query(q)
 
 
 connection_args = OrderedDict(

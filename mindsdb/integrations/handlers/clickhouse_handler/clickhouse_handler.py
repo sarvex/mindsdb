@@ -79,9 +79,9 @@ class ClickHouseHandler(DatabaseHandler):
             log.logger.error(f'Error connecting to ClickHouse {self.connection_data["database"]}, {e}!')
             response.error_message = e
 
-        if response.success is True and need_to_close:
+        if response.success and need_to_close:
             self.disconnect()
-        if response.success is False and self.is_connected is True:
+        if not response.success and self.is_connected is True:
             self.is_connected = False
 
         return response
@@ -98,8 +98,7 @@ class ClickHouseHandler(DatabaseHandler):
         cur = connection.cursor()
         try:
             cur.execute(query)
-            result = cur.fetchall()
-            if result:
+            if result := cur.fetchall():
                 response = Response(
                     RESPONSE_TYPE.TABLE,
                     pd.DataFrame(
@@ -120,7 +119,7 @@ class ClickHouseHandler(DatabaseHandler):
         finally:
             cur.close()
 
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
 
         return response
@@ -147,8 +146,7 @@ class ClickHouseHandler(DatabaseHandler):
         Show details about the table
         """
         q = f"DESCRIBE {table_name}"
-        result = self.native_query(q)
-        return result
+        return self.native_query(q)
 
 
 connection_args = OrderedDict(

@@ -43,8 +43,7 @@ class TestMerlion(BaseExecutorTest):
         test = sequence[~metadata.trainval]
         train["train"] = 1
         test["train"] = 0
-        df = pd.concat([train, test], axis=0)
-        return df
+        return pd.concat([train, test], axis=0)
 
     def get_nab_df(self) -> pd.DataFrame:
         df = pd.read_csv("https://raw.githubusercontent.com/numenta/NAB/master/data/realKnownCause/nyc_taxi.csv")
@@ -162,8 +161,11 @@ class TestMerlion(BaseExecutorTest):
         self.set_handler(mock_handler, name='pg', tables={'nba': df})
 
         # test isolation forest
-        self.exec_train_and_detect(mock_handler=mock_handler, model_name="isolation",
-                                     using_model=f", model_type='isolation'")
+        self.exec_train_and_detect(
+            mock_handler=mock_handler,
+            model_name="isolation",
+            using_model=", model_type='isolation'",
+        )
 
     def exec_train_and_detect(self, mock_handler, model_name, using_model):
         # create predictor
@@ -191,7 +193,7 @@ class TestMerlion(BaseExecutorTest):
     def wait_training(self, model_name):
         # wait
         done = False
-        for attempt in range(900):
+        for _ in range(900):
             ret = self.run_mindsdb_sql(
                 f"select status from mindsdb.predictors where name='{model_name}'"
             )

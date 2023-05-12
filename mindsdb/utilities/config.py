@@ -156,7 +156,7 @@ class Config():
 
     def update(self, data: dict):
         config_path = Path(self.config_path)
-        if config_path.is_file() is False:
+        if not config_path.is_file():
             config_path.write_text('{}')
 
         with open(self.config_path, 'r') as fp:

@@ -69,10 +69,10 @@ class SnowflakeHandler(DatabaseHandler):
             log.logger.error(f'Error connecting to Snowflake {self.connection_data["database"]}, {e}!')
             response.error_message = e
 
-        if response.success is True and need_to_close:
+        if response.success and need_to_close:
             self.disconnect()
 
-        if response.success is False and self.is_connected is True:
+        if not response.success and self.is_connected is True:
             self.is_connected = False
         return response
 
@@ -88,8 +88,7 @@ class SnowflakeHandler(DatabaseHandler):
         with connection.cursor(DictCursor) as cur:
             try:
                 cur.execute(query)
-                result = cur.fetchall()
-                if result:
+                if result := cur.fetchall():
                     response = Response(
                         RESPONSE_TYPE.TABLE,
                         DataFrame(
@@ -105,7 +104,7 @@ class SnowflakeHandler(DatabaseHandler):
                     RESPONSE_TYPE.ERROR,
                     error_message=str(e)
                 )
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
         return response
 
@@ -124,8 +123,7 @@ class SnowflakeHandler(DatabaseHandler):
         List the columns in the tabels for which the user have access
         """
         q = f"SHOW COLUMNS IN TABLE {table_name};"
-        result = self.native_query(q)
-        return result
+        return self.native_query(q)
 
     def query(self, query: ASTNode) -> Response:
         """

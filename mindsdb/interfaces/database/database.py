@@ -34,13 +34,10 @@ class DatabaseController:
             'id': None,
             'engine': None
         }]
-        for x in projects:
-            result.append({
-                'name': x.name,
-                'type': 'project',
-                'id': x.id,
-                'engine': None
-            })
+        result.extend(
+            {'name': x.name, 'type': 'project', 'id': x.id, 'engine': None}
+            for x in projects
+        )
         for key, value in integrations.items():
             db_type = value.get('type', 'data')
             if db_type != 'ml':

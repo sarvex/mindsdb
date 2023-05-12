@@ -49,13 +49,14 @@ class Project:
 
         self.id = record.id
 
-    def save(sefl):
+    def save(self):
         db.session.commit()
 
     def delete(self):
         tables = self.get_tables()
-        tables = [key for key, val in tables.items() if val['type'] != 'table']
-        if len(tables) > 0:
+        if tables := [
+            key for key, val in tables.items() if val['type'] != 'table'
+        ]:
             raise Exception(f"Project '{self.name}' can not be deleted, because it contains tables: {', '.join(tables)}")
 
         is_cloud = Config().get('cloud', False)
@@ -100,8 +101,7 @@ class Project:
             name=view_name,
             project_name=self.name
         )
-        subquery_ast = parse_sql(view_meta['query'], dialect='mindsdb')
-        return subquery_ast
+        return parse_sql(view_meta['query'], dialect='mindsdb')
 
     def get_models(self, model_id=None):
         query = (
@@ -141,9 +141,12 @@ class Project:
                 'total_training_phases': predictor_record.training_phase_total,
                 'training_phase_name': predictor_record.training_phase_name,
             }
-            if predictor_data is not None and predictor_data.get('accuracies', None) is not None:
-                if len(predictor_data['accuracies']) > 0:
-                    predictor_meta['accuracy'] = float(np.mean(list(predictor_data['accuracies'].values())))
+            if (
+                predictor_data is not None
+                and predictor_data.get('accuracies', None) is not None
+                and len(predictor_data['accuracies']) > 0
+            ):
+                predictor_meta['accuracy'] = float(np.mean(list(predictor_data['accuracies'].values())))
             data.append({
                 'name': predictor_record.name,
                 'metadata': predictor_meta,
@@ -161,16 +164,17 @@ class Project:
             .order_by(db.View.name, db.View.id)
             .all()
         )
-        data = [{
-            'name': view_record.name,
-            'metadata': {
-                'type': 'view',
-                'id': view_record.id,
-                'deletable': True
-            }}
+        return [
+            {
+                'name': view_record.name,
+                'metadata': {
+                    'type': 'view',
+                    'id': view_record.id,
+                    'deletable': True,
+                },
+            }
             for view_record in records
         ]
-        return data
 
     def get_tables(self):
         data = OrderedDict()
@@ -197,11 +201,12 @@ class Project:
             project_id=self.id,
             name=table_name
         ).first()
-        columns = []
-        if predictor_record is not None and isinstance(predictor_record.dtype_dict, dict):
-            columns = list(predictor_record.dtype_dict.keys())
-
-        return columns
+        return (
+            list(predictor_record.dtype_dict.keys())
+            if predictor_record is not None
+            and isinstance(predictor_record.dtype_dict, dict)
+            else []
+        )
 
 
 class ProjectController:
@@ -229,7 +234,7 @@ class ProjectController:
                 (sa.func.lower(db.Project.name) == sa.func.lower(name))
             )
 
-        if deleted is True:
+        if deleted:
             q = q.filter((db.Project.deleted_at != sa.null()))
         else:
             q = q.filter_by(deleted_at=sa.null())

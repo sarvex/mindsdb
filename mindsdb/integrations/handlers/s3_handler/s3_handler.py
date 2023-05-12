@@ -93,9 +93,9 @@ class S3Handler(DatabaseHandler):
             log.logger.error(f'Error connecting to AWS with the given credentials, {e}!')
             response.error_message = str(e)
         finally:
-            if response.success is True and need_to_close:
+            if response.success and need_to_close:
                 self.disconnect()
-            if response.success is False and self.is_connected is True:
+            if not response.success and self.is_connected is True:
                 self.is_connected = False
 
         return response
@@ -145,7 +145,7 @@ class S3Handler(DatabaseHandler):
                 error_message=str(e)
             )
 
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
 
         return response
@@ -172,15 +172,10 @@ class S3Handler(DatabaseHandler):
         connection = self.connect()
         objects = [obj['Key'] for obj in connection.list_objects(Bucket=self.connection_data["bucket"])['Contents']]
 
-        response = Response(
+        return Response(
             RESPONSE_TYPE.TABLE,
-            data_frame=pd.DataFrame(
-                objects,
-                columns=['table_name']
-            )
+            data_frame=pd.DataFrame(objects, columns=['table_name']),
         )
-
-        return response
 
     def get_columns(self) -> StatusResponse:
         """
@@ -194,17 +189,15 @@ class S3Handler(DatabaseHandler):
         query = "SELECT * FROM S3Object LIMIT 5"
         result = self.native_query(query)
 
-        response = Response(
+        return Response(
             RESPONSE_TYPE.TABLE,
             data_frame=pd.DataFrame(
                 {
                     'column_name': result.data_frame.columns,
-                    'data_type': result.data_frame.dtypes
+                    'data_type': result.data_frame.dtypes,
                 }
-            )
+            ),
         )
-
-        return response
 
 
 connection_args = OrderedDict(

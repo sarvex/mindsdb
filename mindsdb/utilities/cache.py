@@ -67,18 +67,15 @@ from mindsdb.utilities.json_encoder import CustomJSONEncoder
 
 
 def dataframe_checksum(df: pd.DataFrame):
-    checksum = str_checksum(df.to_json())
-    return checksum
+    return str_checksum(df.to_json())
 
 
 def json_checksum(obj: t.Union[dict, list]):
-    checksum = str_checksum(CustomJSONEncoder().encode(obj))
-    return checksum
+    return str_checksum(CustomJSONEncoder().encode(obj))
 
 
 def str_checksum(obj: str):
-    checksum = hashlib.sha256(obj.encode()).hexdigest()
-    return checksum
+    return hashlib.sha256(obj.encode()).hexdigest()
 
 
 class BaseCache(ABC):
@@ -159,9 +156,7 @@ class FileCache(BaseCache):
     def get_df(self, name):
         path = self.file_path(name)
 
-        if not os.path.exists(path):
-            return None
-        return pd.read_pickle(path)
+        return None if not os.path.exists(path) else pd.read_pickle(path)
 
     def get(self, name):
         path = self.file_path(name)
@@ -231,10 +226,7 @@ class RedisCache(BaseCache):
     def get(self, name):
         key = self.redis_key(name)
         value = self.client.get(key)
-        if value is None:
-            # no value in cache
-            return None
-        return self.deserialize(value)
+        return None if value is None else self.deserialize(value)
 
     def delete(self, name):
         key = self.redis_key(name)

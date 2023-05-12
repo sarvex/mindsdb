@@ -81,34 +81,32 @@ class Scheduler:
     def execute_task(self, record_id, exec_method):
 
         executor = JobsExecutor()
-        if exec_method == 'local':
-            history_id = executor.lock_record(record_id)
-            if history_id is None:
-                # db.session.remove()
-                logger.info(f'Unable create history record for {record_id}, is locked?')
-                return
-
-            # run in thread
-
-            self.q_in.put({
-                'type': 'task',
-                'record_id': record_id,
-                'history_id': history_id,
-            })
-
-            while True:
-                try:
-                    self.q_out.get(timeout=3)
-                    break
-                except queue.Empty:
-                    # update last date:
-                    history_record = db.JobsHistory.query.get(history_id)
-                    history_record.updated_at = dt.datetime.now()
-                    db.session.commit()
-
-        else:
+        if exec_method != 'local':
             # TODO add microservice mode
             raise NotImplementedError()
+        history_id = executor.lock_record(record_id)
+        if history_id is None:
+            # db.session.remove()
+            logger.info(f'Unable create history record for {record_id}, is locked?')
+            return
+
+        # run in thread
+
+        self.q_in.put({
+            'type': 'task',
+            'record_id': record_id,
+            'history_id': history_id,
+        })
+
+        while True:
+            try:
+                self.q_out.get(timeout=3)
+                break
+            except queue.Empty:
+                # update last date:
+                history_record = db.JobsHistory.query.get(history_id)
+                history_record.updated_at = dt.datetime.now()
+                db.session.commit()
 
     def start(self):
 
@@ -124,7 +122,6 @@ class Scheduler:
         except (KeyboardInterrupt, SystemExit):
 
             self.stop_thread()
-            pass
 
 
 def start(verbose=False):

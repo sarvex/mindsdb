@@ -58,9 +58,7 @@ class TestHTTP:
         fnc = getattr(requests, method)
 
         url = f'{HTTP_API_ROOT}/{url.lstrip("/")}'
-        response = fnc(url, json=payload, headers=headers)
-
-        return response
+        return fnc(url, json=payload, headers=headers)
 
     def await_predictor(self, predictor_name, timeout=60):
         start = time.time()

@@ -17,7 +17,7 @@ OVERRIDE_CONFIG = {
 # used by (required for) mindsdb_app fixture in conftest
 API_LIST = ["http",]
 
-HTTP_API_ROOT = f'http://127.0.0.1:47334/api'
+HTTP_API_ROOT = 'http://127.0.0.1:47334/api'
 
 
 @pytest.mark.usefixtures("mindsdb_app")
@@ -41,7 +41,7 @@ class TestHTTP:
             'query': request,
             'context': context
         }
-        response = self.api_request('post', f'/sql/query', payload)
+        response = self.api_request('post', '/sql/query', payload)
 
         assert response.status_code == 200, f"sql/query is not accessible - {response.text}"
         response = response.json()
@@ -62,9 +62,7 @@ class TestHTTP:
         fnc = getattr(requests, method)
 
         url = f'{HTTP_API_ROOT}/{url.lstrip("/")}'
-        response = fnc(url, json=payload, headers=headers)
-
-        return response
+        return fnc(url, json=payload, headers=headers)
 
     def await_predictor(self, predictor_name, timeout=60):
         start = time.time()

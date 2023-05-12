@@ -62,9 +62,11 @@ class ModelController():
         )
         data['json_ai'] = json_storage.get('json_ai')
 
-        if data.get('accuracies', None) is not None:
-            if len(data['accuracies']) > 0:
-                data['accuracy'] = float(np.mean(list(data['accuracies'].values())))
+        if (
+            data.get('accuracies', None) is not None
+            and len(data['accuracies']) > 0
+        ):
+            data['accuracy'] = float(np.mean(list(data['accuracies'].values())))
         return data
 
     def describe_model(self, session,  project_name, model_name, attribute):
@@ -83,22 +85,21 @@ class ModelController():
 
         df = ml_handler.describe(attribute)
 
-        if attribute is None:
-            # show model record
-            model_info = self.get_model_info(model_record)
-
-            # expecting list of attributes in first column df
-            attributes = []
-            if len(df) > 0 and len(df.columns) > 0:
-                attributes = list(df[df.columns[0]])
-                if len(attributes) == 1 and isinstance(attributes[0], list):
-                    # first cell already has a list
-                    attributes = attributes[0]
-
-            model_info.insert(0, 'tables', [attributes])
-            return model_info
-        else:
+        if attribute is not None:
             return df
+        # show model record
+        model_info = self.get_model_info(model_record)
+
+        # expecting list of attributes in first column df
+        attributes = []
+        if len(df) > 0 and len(df.columns) > 0:
+            attributes = list(df[df.columns[0]])
+            if len(attributes) == 1 and isinstance(attributes[0], list):
+                # first cell already has a list
+                attributes = attributes[0]
+
+        model_info.insert(0, 'tables', [attributes])
+        return model_info
 
     def get_models(self, with_versions=False, ml_handler_name=None, integration_id=None,
                    project_name=None):
@@ -107,13 +108,26 @@ class ModelController():
         for predictor_record in get_model_records(active=show_active, ml_handler_name=ml_handler_name,
                                                   integration_id=integration_id, project_name=project_name):
             model_data = self.get_model_data(predictor_record=predictor_record)
-            reduced_model_data = {}
-
-            for k in ['id', 'name', 'version', 'is_active', 'predict', 'status',
-                      'current_phase', 'accuracy', 'data_source', 'update', 'active',
-                      'mindsdb_version', 'error', 'created_at', 'fetch_data_query']:
-                reduced_model_data[k] = model_data.get(k, None)
-
+            reduced_model_data = {
+                k: model_data.get(k, None)
+                for k in [
+                    'id',
+                    'name',
+                    'version',
+                    'is_active',
+                    'predict',
+                    'status',
+                    'current_phase',
+                    'accuracy',
+                    'data_source',
+                    'update',
+                    'active',
+                    'mindsdb_version',
+                    'error',
+                    'created_at',
+                    'fetch_data_query',
+                ]
+            }
             reduced_model_data['training_time'] = None
             if model_data.get('training_start_at') is not None:
                 if model_data.get('training_stop_at') is not None:
@@ -164,8 +178,12 @@ class ModelController():
                 model_data = self.get_model_data(predictor_record=predictor_record)
                 if (
                     model_data.get('status') in ['generating', 'training']
-                    and isinstance(model_data.get('created_at'), str) is True
-                    and (dt.datetime.now() - parse_datetime(model_data.get('created_at'))) < dt.timedelta(hours=1)
+                    and isinstance(model_data.get('created_at'), str)
+                    and (
+                        dt.datetime.now()
+                        - parse_datetime(model_data.get('created_at'))
+                    )
+                    < dt.timedelta(hours=1)
                 ):
                     raise Exception('You are unable to delete models currently in progress, please wait before trying again')
 
@@ -464,14 +482,10 @@ class ModelController():
 
     def update_model_version(self, models, active=None):
         if active is None:
-            raise NotImplementedError(f'Update is not supported')
+            raise NotImplementedError('Update is not supported')
 
-        if active in ('0', 0, False):
-            active = False
-        else:
-            active = True
-
-        if active is False:
+        active = active not in ('0', 0, False)
+        if not active:
             raise NotImplementedError('Only setting active version is possible')
 
         if len(models) != 1:
@@ -503,7 +517,7 @@ class ModelController():
 
     def delete_model_version(self, models):
         if len(models) == 0:
-            raise Exception(f"Version to delete is not found")
+            raise Exception("Version to delete is not found")
 
         for model in models:
             model_record = get_model_record(
@@ -514,8 +528,7 @@ class ModelController():
             if model_record.active:
                 raise Exception(f"Can't remove active version: f{model['PROJECT']}.{model['NAME']}.{model['VERSION']}")
 
-            is_cloud = self.config.get('cloud', False)
-            if is_cloud:
+            if is_cloud := self.config.get('cloud', False):
                 model_record.deleted_at = dt.datetime.now()
             else:
                 db.session.delete(model_record)

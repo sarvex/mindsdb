@@ -15,9 +15,7 @@ class HTTPHelperMixin:
         fnc = getattr(requests, method)
 
         url = f'{HTTP_API_ROOT}/{url.lstrip("/")}'
-        response = fnc(url, json=payload)
-
-        return response
+        return fnc(url, json=payload)
 
     def sql_via_http(self, request: str, expected_resp_type: str = None, context: dict = None) -> dict:
         if context is None:
@@ -93,16 +91,13 @@ def check_predictor_not_exists(name):
 
 def get_predictor_data(name):
     predictors = get_predictors_list()
-    for p in predictors:
-        if p['name'] == name:
-            return p
-    return None
+    return next((p for p in predictors if p['name'] == name), None)
 
 
 def wait_predictor_learn(predictor_name):
     start_time = time.time()
     learn_done = False
-    while learn_done is False and (time.time() - start_time) < 180:
+    while not learn_done and (time.time() - start_time) < 180:
         learn_done = get_predictor_data(predictor_name)['status'] == 'complete'
         time.sleep(1)
     assert learn_done

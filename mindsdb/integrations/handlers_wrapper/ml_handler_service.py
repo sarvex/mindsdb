@@ -16,11 +16,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5001))
     host = os.environ.get("HOST")
 
-    # If there is a handler discovery service
-    # start a thread to send service info
-    # to the discovery service
-    registry_url = os.environ.get("REGISTRY_URL")
-    if registry_url:
+    if registry_url := os.environ.get("REGISTRY_URL"):
         registry_url = f"{registry_url}/register"
         interval = os.environ.get("REGISTRY_INTERVAL", 50)
         service_type = os.environ.get("MINDSDB_SERVICE_TYPE", "lightwood")

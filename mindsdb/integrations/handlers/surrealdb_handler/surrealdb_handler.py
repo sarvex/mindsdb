@@ -81,9 +81,9 @@ class SurrealDBHandler(DatabaseHandler):
             log.logger.error(f'Error connecting to SurrealDB, {e}!')
             response_code.error_message = str(e)
         finally:
-            if response_code.success is True and need_to_close:
+            if response_code.success and need_to_close:
                 self.disconnect()
-            if response_code.success is False and self.is_connected is True:
+            if not response_code.success and self.is_connected is True:
                 self.is_connected = False
 
         return response_code
@@ -115,8 +115,7 @@ class SurrealDBHandler(DatabaseHandler):
         cur = conn.cursor()
         try:
             cur.execute(query)
-            result = cur.fetchall()
-            if result:
+            if result := cur.fetchall():
                 response = Response(
                     RESPONSE_TYPE.TABLE,
                     data_frame=pd.DataFrame(
@@ -135,7 +134,7 @@ class SurrealDBHandler(DatabaseHandler):
 
         cur.close()
 
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
 
         return response
@@ -169,10 +168,7 @@ class SurrealDBHandler(DatabaseHandler):
         # construct pandas dataframe
         df = pd.DataFrame(tables, columns=['table_name'])
 
-        response = Response(
-            RESPONSE_TYPE.TABLE, df
-        )
-        return response
+        return Response(RESPONSE_TYPE.TABLE, df)
 
     def get_columns(self, table: str) -> Response:
         """ Return list of columns in table
@@ -189,10 +185,7 @@ class SurrealDBHandler(DatabaseHandler):
         df = pd.DataFrame(columns, columns=['table_name'])
         df['data_type'] = types
 
-        response = Response(
-            RESPONSE_TYPE.TABLE, df
-        )
-        return response
+        return Response(RESPONSE_TYPE.TABLE, df)
 
 
 connection_args = OrderedDict(

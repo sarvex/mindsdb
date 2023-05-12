@@ -80,9 +80,7 @@ def handler(request):
 
     if with_ssl:
         get_certificates(container)
-    handler = MySQLHandler('test_mysql_handler', **HANDLER_KWARGS)
-    yield handler
-
+    yield MySQLHandler('test_mysql_handler', **HANDLER_KWARGS)
     # normal teardown
     container.kill()
     docker_client.close()

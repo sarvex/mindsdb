@@ -18,9 +18,9 @@ class CustomJSONEncoder(JSONEncoder):
             return obj.strftime("%Y-%m-%d")
         if isinstance(obj, np.bool_):
             return bool(obj)
-        if isinstance(obj, np.int8) or isinstance(obj, np.int16) or isinstance(obj, np.int32) or isinstance(obj, np.int64):
+        if isinstance(obj, (np.int8, np.int16, np.int32, np.int64)):
             return int(obj)
-        if isinstance(obj, np.float16) or isinstance(obj, np.float32) or isinstance(obj, np.float64) or isinstance(obj, Decimal):
+        if isinstance(obj, (np.float16, np.float32, np.float64, Decimal)):
             return float(obj)
 
         return str(obj)

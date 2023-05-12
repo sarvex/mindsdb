@@ -84,7 +84,7 @@ class LangChainHandler(OpenAIHandler):
         df = df.reset_index(drop=True)
 
         if 'prompt_template' not in args and 'prompt_template' not in pred_args:
-            raise Exception(f"This model expects a prompt template, please provide one.")
+            raise Exception("This model expects a prompt template, please provide one.")
 
         # TODO: enable other LLM backends (AI21, Anthropic, etc.)
         if 'stops' in pred_args:
@@ -151,7 +151,7 @@ class LangChainHandler(OpenAIHandler):
             'max_iterations': agent.max_iterations,
             'memory_type': memory.__class__.__name__,
         }
-        description = {**description, **model_kwargs}
+        description = description | model_kwargs
         description.pop('openai_api_key', None)
         self.model_storage.json_set('description', description)
 
@@ -184,7 +184,7 @@ class LangChainHandler(OpenAIHandler):
             # TODO: ensure that agent completion plus prompt match the maximum allowed by the user
             # TODO: use async API if possible for parallelized completion
             completion = [agent.run(prompt) for prompt in prompts]
-            return [c for c in completion]
+            return list(completion)
 
         completion = _completion(agent, prompts)
 
@@ -218,8 +218,7 @@ class LangChainHandler(OpenAIHandler):
                 # for them, we report the last observed value
                 raise Exception('This model needs to be used before it can be described.')
 
-            description = pd.DataFrame(info)
-            return description
+            return pd.DataFrame(info)
         else:
             tables = ['info']
             return pd.DataFrame(tables, columns=['tables'])

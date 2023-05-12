@@ -29,12 +29,11 @@ def get_integration_record(name: str) -> db.Integration:
     if company_id is None:
         company_id = null()
 
-    record = (
+    return (
         db.session.query(db.Integration)
         .filter_by(company_id=company_id, name=name)
         .first()
     )
-    return record
 
 
 def get_project_record(name: str) -> db.Project:
@@ -42,31 +41,27 @@ def get_project_record(name: str) -> db.Project:
     if company_id is None:
         company_id = null()
 
-    project_record = (
+    return (
         db.session.query(db.Project)
         .filter(
             (func.lower(db.Project.name) == name)
             & (db.Project.company_id == company_id)
             & (db.Project.deleted_at == null())
-        ).first()
+        )
+        .first()
     )
-    return project_record
 
 
 def get_predictor_integration(record: db.Predictor) -> db.Integration:
-    integration_record = (
+    return (
         db.session.query(db.Integration)
-        .filter_by(id=record.integration_id).first()
+        .filter_by(id=record.integration_id)
+        .first()
     )
-    return integration_record
 
 
 def get_predictor_project(record: db.Predictor) -> db.Project:
-    project_record = (
-        db.session.query(db.Project)
-        .filter_by(id=record.project_id).first()
-    )
-    return project_record
+    return db.session.query(db.Project).filter_by(id=record.project_id).first()
 
 
 def get_model_records(integration_id=None, active=True, deleted_at=null(),

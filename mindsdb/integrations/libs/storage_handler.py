@@ -23,8 +23,7 @@ class KVStorageHandler:
         return md5(serialized_key).hexdigest() + md5(self.context).hexdigest()
 
     def get(self, key, default_value=None):
-        serialized_value = self._get(self._get_context_key(key))
-        if serialized_value:
+        if serialized_value := self._get(self._get_context_key(key)):
             return self.serializer.loads(serialized_value)
         elif default_value is not None:
             return default_value
@@ -60,8 +59,11 @@ class SqliteStorageHandler(KVStorageHandler):
 
     def _get(self, serialized_key):
         cur = self.connection.cursor()
-        results = list(cur.execute(f"""select value from store where key='{serialized_key}'"""))
-        if results:
+        if results := list(
+            cur.execute(
+                f"""select value from store where key='{serialized_key}'"""
+            )
+        ):
             return results[0][0]  # should always be a single match, hence the [0]s
         else:
             return None

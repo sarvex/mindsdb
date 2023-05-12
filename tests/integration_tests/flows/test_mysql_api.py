@@ -31,9 +31,7 @@ class Dlist(list):
     """Service class for convenient work with list of dicts(db response)"""
 
     def __contains__(self, item):
-        if item in self.__getitem__(0):
-            return True
-        return False
+        return item in self.__getitem__(0)
 
     def get_record(self, key, value):
         if key in self:
@@ -88,10 +86,7 @@ class BaseStuff:
 
     def create_database(self, db_data):
         db_type = db_data["type"]
-        _query = "CREATE DATABASE %s WITH ENGINE = '%s', PARAMETERS = %s;" % (
-            db_type.upper(),
-            db_type,
-            json.dumps(db_data["connection_data"]))
+        _query = f"""CREATE DATABASE {db_type.upper()} WITH ENGINE = '{db_type}', PARAMETERS = {json.dumps(db_data["connection_data"])};"""
 
         self.query(_query)
         # and try to drop one of the datasources
@@ -117,8 +112,8 @@ class BaseStuff:
         timeout = 5
         threshold = time.time() + timeout
         res = ''
+        _query = "USE files; SHOW tables;"
         while time.time() < threshold:
-            _query = "USE files; SHOW tables;"
             res = self.query(_query)
             if 'Tables_in_files' in res and res.get_record('Tables_in_files', ds_name):
                 break
@@ -130,7 +125,7 @@ class BaseStuff:
         threshold = time.time() + timeout
         res = ''
         while time.time() < threshold:
-            _query = "SELECT status, error FROM mindsdb.models WHERE name='{}';".format(predictor_name)
+            _query = f"SELECT status, error FROM mindsdb.models WHERE name='{predictor_name}';"
             res = self.query(_query)
             if 'status' in res:
                 if res.get_record('status', 'complete'):
@@ -142,7 +137,9 @@ class BaseStuff:
 
     def validate_database_creation(self, db_data):
         ds_type = db_data["type"]
-        res = self.query("SELECT name FROM information_schema.databases WHERE name='{}';".format(ds_type.upper()))
+        res = self.query(
+            f"SELECT name FROM information_schema.databases WHERE name='{ds_type.upper()}';"
+        )
         assert "name" in res and res.get_record("name", ds_type.upper()), f"Expected datasource is not found after creation - {ds_type.upper()}: {res}"
 
 
@@ -165,10 +162,7 @@ class TestMySqlApi(BaseStuff):
         cls.mysql_image = 'mysql'
         cls.config = json.loads(Path(os.path.join(TEMP_DIR, "config.json")).read_text())
 
-        cls.launch_query_tmpl = "mysql --host=%s --port=%s --user=%s --database=mindsdb" % (
-            cls.config["api"]["mysql"]["host"],
-            cls.config["api"]["mysql"]["port"],
-            cls.config["auth"]["username"])
+        cls.launch_query_tmpl = f'mysql --host={cls.config["api"]["mysql"]["host"]} --port={cls.config["api"]["mysql"]["port"]} --user={cls.config["auth"]["username"]} --database=mindsdb'
 
     @classmethod
     def tear_down(cls):
@@ -225,11 +219,15 @@ class TestMySqlApi(BaseStuff):
         self.query(service_req)
 
     def test_train_model_from_files(self):
-        df = pd.DataFrame({
-            'x1': [x for x in range(100, 210)] + [x for x in range(100, 210)],
-            'x2': [x * 2 for x in range(100, 210)] + [x * 3 for x in range(100, 210)],
-            'y': [x * 3 for x in range(100, 210)] + [x * 2 for x in range(100, 210)]
-        })
+        df = pd.DataFrame(
+            {
+                'x1': list(range(100, 210)) + list(range(100, 210)),
+                'x2': [x * 2 for x in range(100, 210)]
+                + [x * 3 for x in range(100, 210)],
+                'y': [x * 3 for x in range(100, 210)]
+                + [x * 2 for x in range(100, 210)],
+            }
+        )
         file_predictor_name = "predictor_from_file"
         self.upload_ds(df, self.file_datasource_name)
         self.verify_file_ds(self.file_datasource_name)
@@ -247,21 +245,31 @@ class TestMySqlApi(BaseStuff):
         self.query(_query)
 
     def test_ts_train_and_predict(self, subtests):
-        train_df = pd.DataFrame({
-            'gby': ["A" for _ in range(100, 210)] + ["B" for _ in range(100, 210)],
-            'oby': [x for x in range(100, 210)] + [x for x in range(200, 310)],
-            'x1': [x for x in range(100, 210)] + [x for x in range(100, 210)],
-            'x2': [x * 2 for x in range(100, 210)] + [x * 3 for x in range(100, 210)],
-            'y': [x * 3 for x in range(100, 210)] + [x * 2 for x in range(100, 210)]
-        })
+        train_df = pd.DataFrame(
+            {
+                'gby': ["A" for _ in range(100, 210)]
+                + ["B" for _ in range(100, 210)],
+                'oby': list(range(100, 210)) + list(range(200, 310)),
+                'x1': list(range(100, 210)) + list(range(100, 210)),
+                'x2': [x * 2 for x in range(100, 210)]
+                + [x * 3 for x in range(100, 210)],
+                'y': [x * 3 for x in range(100, 210)]
+                + [x * 2 for x in range(100, 210)],
+            }
+        )
 
-        test_df = pd.DataFrame({
-            'gby': ["A" for _ in range(210, 220)] + ["B" for _ in range(210, 220)],
-            'oby': [x for x in range(210, 220)] + [x for x in range(310, 320)],
-            'x1': [x for x in range(210, 220)] + [x for x in range(210, 220)],
-            'x2': [x * 2 for x in range(210, 220)] + [x * 3 for x in range(210, 220)],
-            'y': [x * 3 for x in range(210, 220)] + [x * 2 for x in range(210, 220)]
-        })
+        test_df = pd.DataFrame(
+            {
+                'gby': ["A" for _ in range(210, 220)]
+                + ["B" for _ in range(210, 220)],
+                'oby': list(range(210, 220)) + list(range(310, 320)),
+                'x1': list(range(210, 220)) + list(range(210, 220)),
+                'x2': [x * 2 for x in range(210, 220)]
+                + [x * 3 for x in range(210, 220)],
+                'y': [x * 3 for x in range(210, 220)]
+                + [x * 2 for x in range(210, 220)],
+            }
+        )
 
         train_ds_name = "train_ts_file_ds"
         test_ds_name = "test_ts_file_ds"

@@ -58,13 +58,10 @@ def calc_next_date(schedule_str, base_date: dt.datetime):
     config = Config()
 
     is_cloud = config.get('cloud', False)
-    if is_cloud and ctx.user_class == 0:
-        if delta < dt.timedelta(days=1):
-            raise Exception("Minimal allowed period can't be less than one day")
+    if is_cloud and ctx.user_class == 0 and delta < dt.timedelta(days=1):
+        raise Exception("Minimal allowed period can't be less than one day")
 
-    next_date = base_date + delta
-
-    return next_date
+    return base_date + delta
 
 
 class JobsController:
@@ -113,7 +110,7 @@ class JobsController:
 
         schedule_str = None
         if repeat_str is not None:
-            schedule_str = 'every ' + repeat_str
+            schedule_str = f'every {repeat_str}'
 
             # try to calculate schedule string
             calc_next_date(schedule_str, start_at)
@@ -185,13 +182,12 @@ class JobsController:
             project = project_controller.get(name=project_name)
             query = query.filter_by(project_id=project.id)
 
-        data = []
         project_names = {
             i.id: i.name
             for i in project_controller.get_list()
         }
-        for record in query:
-            data.append({
+        return [
+            {
                 'id': record.id,
                 'name': record.name,
                 'project': project_names[record.project_id],
@@ -200,8 +196,9 @@ class JobsController:
                 'next_run_at': record.next_run_at,
                 'schedule_str': record.schedule_str,
                 'query': record.query_str,
-            })
-        return data
+            }
+            for record in query
+        ]
 
     def get_history(self, project_name=None):
         query = db.session.query(db.JobsHistory, db.Jobs).filter_by(
@@ -213,21 +210,21 @@ class JobsController:
             project = project_controller.get(name=project_name)
             query = query.filter_by(project_id=project.id)
 
-        data = []
         project_names = {
             i.id: i.name
             for i in project_controller.get_list()
         }
-        for record in query:
-            data.append({
+        return [
+            {
                 'name': record.Jobs.name,
                 'project': project_names[record.Jobs.project_id],
                 'run_start': record.JobsHistory.start_at,
                 'run_end': record.JobsHistory.end_at,
                 'error': record.JobsHistory.error,
                 'query': record.JobsHistory.query_str,
-            })
-        return data
+            }
+            for record in query
+        ]
 
 
 class JobsExecutor:
@@ -340,15 +337,11 @@ class JobsExecutor:
                 if '{{PREVIOUS_START_DATETIME}}' in sql:
                     # get previous run date
                     history_prev = db.session.query(db.JobsHistory.start_at)\
-                        .filter(db.JobsHistory.job_id == record.id,
+                            .filter(db.JobsHistory.job_id == record.id,
                                 db.JobsHistory.id != history_id)\
-                        .order_by(db.JobsHistory.id.desc())\
-                        .first()
-                    if history_prev is None:
-                        # start date of the job
-                        value = record.created_at
-                    else:
-                        value = history_prev.start_at
+                            .order_by(db.JobsHistory.id.desc())\
+                            .first()
+                    value = record.created_at if history_prev is None else history_prev.start_at
                     value = value.strftime("%Y-%m-%d %H:%M:%S")
                     sql = sql.replace('{{PREVIOUS_START_DATETIME}}', value)
 
@@ -368,7 +361,7 @@ class JobsExecutor:
 
                 command_executor = ExecuteCommands(sql_session, executor=None)
 
-                executed_sql += sql + '; '
+                executed_sql += f'{sql}; '
 
                 ret = command_executor.execute_command(query)
                 if ret.error_code is not None:

@@ -38,7 +38,7 @@ class TweetsTable(APITable):
         for op, arg1, arg2 in conditions:
 
             if op == 'or':
-                raise NotImplementedError(f'OR is not supported')
+                raise NotImplementedError('OR is not supported')
             if arg1 == 'created_at':
                 date = parse_utc_date(arg2)
                 if op == '>':
@@ -145,11 +145,11 @@ class TweetsTable(APITable):
             if p not in self.handler.connection_args:
                 raise Exception(f'To insert data into Twitter, you need to provide the following parameters when connecting it to MindsDB: {insert_params}')  # noqa
 
+        # split long text over 280 symbols
+        max_text_len = 280
         for row in query.values:
             params = dict(zip(columns, row))
 
-            # split long text over 280 symbols
-            max_text_len = 280
             text = params['text']
             if len(text) <= 280:
                 # Post image if column media_url is provided, only do this on last tweet
@@ -193,11 +193,7 @@ class TweetsTable(APITable):
 
             len_messages = len(messages)
             for i, text in enumerate(messages):
-                if i < len_messages - 1:
-                    text += '...'
-                else:
-                    text += ' '
-
+                text += '...' if i < len_messages - 1 else ' '
                 text += f'({i + 1}/{len_messages})'
 
                 params['text'] = text
@@ -279,7 +275,7 @@ class TwitterHandler(APIHandler):
             response.error_message = f'Error connecting to Twitter api: {e}. Check bearer_token'
             log.logger.error(response.error_message)
 
-        if response.success is True and len(self.connection_args) > 1:
+        if response.success and len(self.connection_args) > 1:
             # not only bearer_token, check read-write mode (OAuth 2.0 Authorization Code with PKCE)
             try:
                 api = self.connect()
@@ -293,7 +289,7 @@ class TwitterHandler(APIHandler):
 
                 response.success = False
 
-        if response.success is False and self.is_connected is True:
+        if not response.success and self.is_connected is True:
             self.is_connected = False
 
         return response
@@ -321,12 +317,16 @@ class TwitterHandler(APIHandler):
                     # twitter returns ids as string
                     value = str(value)
 
-                if op in ('!=', '<>'):
-                    if value == value2:
-                        break
-                elif op in ('==', '='):
-                    if value != value2:
-                        break
+                if (
+                    op in ('!=', '<>')
+                    and value == value2
+                    or op not in ('!=', '<>')
+                    and op in ('==', '=')
+                    and value != value2
+                ):
+                    break
+                elif op in ('!=', '<>', '==', '='):
+                    pass
                 elif op == 'in':
                     if not isinstance(value, list):
                         value = [value]
@@ -360,12 +360,7 @@ class TwitterHandler(APIHandler):
         api = self.connect()
         method = getattr(api, method_name)
 
-        # pagination handle
-
-        count_results = None
-        if 'max_results' in params:
-            count_results = params['max_results']
-
+        count_results = params.get('max_results', None)
         data = []
         includes = defaultdict(list)
 

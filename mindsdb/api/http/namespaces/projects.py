@@ -15,11 +15,7 @@ class ProjectsList(Resource):
         ''' List all projects '''
         session = SessionController()
 
-        projects = [
-            {'name': i}
-            for i in session.datahub.get_projects_names()
-        ]
-        return projects
+        return [{'name': i} for i in session.datahub.get_projects_names()]
 
 
 @ns_conf.route('/<project_name>')
@@ -46,8 +42,9 @@ class ModelsList(Resource):
         ''' List all models '''
         session = SessionController()
 
-        models = session.model_controller.get_models(with_versions=True, project_name=project_name)
-        return models
+        return session.model_controller.get_models(
+            with_versions=True, project_name=project_name
+        )
 
 
 @ns_conf.route('/<project_name>/models/<model_name>/predict')

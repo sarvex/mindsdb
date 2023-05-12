@@ -13,7 +13,7 @@ class TestLW(BaseExecutorTest):
     def wait_predictor(self, project, name):
         # wait
         done = False
-        for attempt in range(200):
+        for _ in range(200):
             ret = self.run_sql(
                 f"select * from {project}.models where name='{name}'"
             )

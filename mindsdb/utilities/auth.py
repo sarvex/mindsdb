@@ -15,7 +15,7 @@ def get_aws_meta_data() -> dict:
         'ami-id': None,
         'instance-id': None
     }
-    for key in aws_meta_data.keys():
+    for key in aws_meta_data:
         resp = requests.get(
             f'http://169.254.169.254/latest/meta-data/{key}',
             timeout=1

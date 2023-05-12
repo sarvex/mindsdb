@@ -45,12 +45,14 @@ class FileController():
                 list[dict]: files metadata
         """
         file_records = db.session.query(db.File).filter_by(company_id=ctx.company_id).all()
-        files_metadata = [{
-            'name': record.name,
-            'row_count': record.row_count,
-            'columns': record.columns,
-        } for record in file_records]
-        return files_metadata
+        return [
+            {
+                'name': record.name,
+                'row_count': record.row_count,
+                'columns': record.columns,
+            }
+            for record in file_records
+        ]
 
     def save_file(self, name, file_path, file_name=None):
         """ Save the file to our store

@@ -74,9 +74,9 @@ class YugabyteHandler(DatabaseHandler):
             log.logger.error(f'Error connecting to PostgreSQL {self.database}, {e}!')
             response.error_message = e
 
-        if response.success is True and need_to_close:
+        if response.success and need_to_close:
             self.disconnect()
-        if response.success is False and self.is_connected is True:
+        if not response.success and self.is_connected is True:
             self.is_connected = False
 
         return response
@@ -94,7 +94,7 @@ class YugabyteHandler(DatabaseHandler):
         with conn.cursor() as cur:
             try:
                 cur.execute(query)
-                   
+
                 if cur.rowcount >0 and query.upper().startswith('SELECT') :
                     result = cur.fetchall() 
                     response = Response(
@@ -115,7 +115,7 @@ class YugabyteHandler(DatabaseHandler):
                 )
                 self.connection.rollback()
 
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
 
         return response

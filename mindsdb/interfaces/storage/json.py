@@ -9,7 +9,7 @@ class JsonStorage:
         self.resource_id = resource_id
 
     def __setitem__(self, key, value):
-        if isinstance(value, dict) is False:
+        if not isinstance(value, dict):
             raise TypeError(f"got {type(value)} instead of dict")
         existing_record = self.get_record(key)
         if existing_record is None:
@@ -30,29 +30,33 @@ class JsonStorage:
 
     def __getitem__(self, key):
         record = self.get_record(key)
-        if record is None:
-            return None
-        return record.content
+        return None if record is None else record.content
 
     def get(self, key):
         return self[key]
 
     def get_record(self, key):
-        record = db.session.query(db.JsonStorage).filter_by(
-            name=key,
-            resource_group=self.resource_group,
-            resource_id=self.resource_id,
-            company_id=ctx.company_id
-        ).first()
-        return record
+        return (
+            db.session.query(db.JsonStorage)
+            .filter_by(
+                name=key,
+                resource_group=self.resource_group,
+                resource_id=self.resource_id,
+                company_id=ctx.company_id,
+            )
+            .first()
+        )
 
     def get_all_records(self):
-        records = db.session.query(db.JsonStorage).filter_by(
-            resource_group=self.resource_group,
-            resource_id=self.resource_id,
-            company_id=ctx.company_id
-        ).all()
-        return records
+        return (
+            db.session.query(db.JsonStorage)
+            .filter_by(
+                resource_group=self.resource_group,
+                resource_id=self.resource_id,
+                company_id=ctx.company_id,
+            )
+            .all()
+        )
 
     def __repr__(self):
         records = self.get_all_records()

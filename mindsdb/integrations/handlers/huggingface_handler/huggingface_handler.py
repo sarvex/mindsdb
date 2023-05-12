@@ -77,7 +77,7 @@ class HuggingFaceHandler(BaseMLEngine):
             if key in input_keys:
                 input_keys.remove(key)
 
-        if len(input_keys) > 0:
+        if input_keys:
             raise Exception(f'Not expected parameters: {", ".join(input_keys)}')
 
     def create(self, target, args=None, **kwargs):
@@ -102,9 +102,7 @@ class HuggingFaceHandler(BaseMLEngine):
         try:
             pipeline = transformers.pipeline(task=args['task_proper'], model=hf_model_storage_path,
                                              tokenizer=hf_model_storage_path)
-            log.logger.debug(f'Model already downloaded!')
-        ####
-        # Otherwise download it
+            log.logger.debug('Model already downloaded!')
         except OSError:
             try:
                 log.logger.debug(f"Downloading {model_name}...")
@@ -131,12 +129,10 @@ class HuggingFaceHandler(BaseMLEngine):
         if 'labels' in args:
             for num in labels_default.keys():
                 labels_map[labels_default[num]] = args['labels'][num]
-            args['labels_map'] = labels_map
         else:
             for num in labels_default.keys():
                 labels_map[labels_default[num]] = labels_default[num]
-            args['labels_map'] = labels_map
-
+        args['labels_map'] = labels_map
         ###### store and persist in model folder
         self.model_storage.json_set('args', args)
 

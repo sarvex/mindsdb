@@ -62,11 +62,7 @@ class SQLAnyHandler(DatabaseHandler):
         if self.port.strip().isnumeric():
             self.host += ":" + self.port.strip()
 
-        if self.encryption:
-            self.encryption = "SIMPLE"
-        else:
-            self.encryption = "NONE"
-        
+        self.encryption = "SIMPLE" if self.encryption else "NONE"
         connection = sqlanydb.connect(
             host=self.host,
             userid=self.userid,
@@ -106,9 +102,9 @@ class SQLAnyHandler(DatabaseHandler):
             log.error(f'Error connecting to SAP SQL Anywhere {self.host}, {e}!')
             response.error_message = e
 
-        if response.success is True and need_to_close:
+        if response.success and need_to_close:
             self.disconnect()
-        if response.success is False and self.is_connected is True:
+        if not response.success and self.is_connected is True:
             self.is_connected = False
 
         return response
@@ -147,7 +143,7 @@ class SQLAnyHandler(DatabaseHandler):
             )
             connection.rollback()
 
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
 
         return response
@@ -165,14 +161,16 @@ class SQLAnyHandler(DatabaseHandler):
         List all tables in SAP SQL Anywhere in the current schema
         """
 
-        return self.native_query(f"""
+        return self.native_query(
+            """
             SELECT USER_NAME(ob.UID) AS SCHEMA_NAME
             , st.TABLE_NAME
             , st.TABLE_TYPE
             FROM SYSOBJECTS ob
             INNER JOIN SYS.SYSTABLE st on ob.ID = st.OBJECT_ID
             WHERE ob.TYPE='U' AND st.TABLE_TYPE <> 'GBL TEMP'
-        """)
+        """
+        )
 
     def get_columns(self, table_name: str) -> Response:
         """

@@ -51,8 +51,7 @@ def handler(request):
             container.kill()
         raise e
 
-    handler = PostgresHandler('test_postgres_handler', **HANDLER_KWARGS)
-    yield handler
+    yield PostgresHandler('test_postgres_handler', **HANDLER_KWARGS)
     container.kill()
     docker_client.close()
 

@@ -29,15 +29,17 @@ RESOURCE_GROUP = RESOURCE_GROUP()
 
 def copy(src, dst):
     if os.path.isdir(src):
-        if os.path.exists(dst):
-            if dirhash(src) == dirhash(dst):
-                return
+        if os.path.exists(dst) and dirhash(src) == dirhash(dst):
+            return
         shutil.rmtree(dst, ignore_errors=True)
         shutil.copytree(src, dst)
     else:
-        if os.path.exists(dst):
-            if hashlib.md5(open(src, 'rb').read()).hexdigest() == hashlib.md5(open(dst, 'rb').read()).hexdigest():
-                return
+        if (
+            os.path.exists(dst)
+            and hashlib.md5(open(src, 'rb').read()).hexdigest()
+            == hashlib.md5(open(dst, 'rb').read()).hexdigest()
+        ):
+            return
         try:
             os.remove(dst)
         except Exception:
@@ -100,8 +102,8 @@ class LocalFSStore(BaseFSStore):
     def put(self, local_name, base_dir):
         remote_name = local_name
         copy(
-            os.path.join(base_dir, local_name),
-            os.path.join(self.storage, remote_name)
+            os.path.join(base_dir, remote_name),
+            os.path.join(self.storage, remote_name),
         )
 
     def delete(self, remote_name):
@@ -139,14 +141,14 @@ class S3FSStore(BaseFSStore):
             os.path.join(base_dir, remote_name),
             'gztar',
             root_dir=base_dir,
-            base_dir=local_name
+            base_dir=remote_name,
         )
         self.s3.upload_file(
             os.path.join(base_dir, f'{remote_name}.tar.gz'),
             self.bucket,
             f'{remote_name}.tar.gz'
         )
-        os.remove(os.path.join(base_dir, remote_name + '.tar.gz'))
+        os.remove(os.path.join(base_dir, f'{remote_name}.tar.gz'))
 
     def delete(self, remote_name):
         self.s3.delete_object(Bucket=self.bucket, Key=remote_name)
@@ -201,10 +203,10 @@ class FileStorage:
             pass
 
     def pull_path(self, path, update=True):
-        if update is False:
-            # not pull from source if object is exists
-            if os.path.exists(self.resource_group_path / self.folder_name / path):
-                return
+        if update is False and os.path.exists(
+            self.resource_group_path / self.folder_name / path
+        ):
+            return
         try:
             # TODO not sync if not changed?
             self.fs_store.get(os.path.join(self.folder_name, path), str(self.resource_group_path))

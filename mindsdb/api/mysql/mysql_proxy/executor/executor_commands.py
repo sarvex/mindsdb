@@ -119,7 +119,7 @@ def _get_show_where(
     if statement.where is not None:
         where.append(statement.where)
 
-    if len(where) > 0:
+    if where:
         return reduce(
             lambda prev, next: BinaryOperation("and", args=[prev, next]), where
         )
@@ -166,7 +166,7 @@ class ExecuteCommands:
             return ExecuteAnswer(ANSWER_TYPE.OK)
         elif type(statement) == DropTables:
             return self.answer_drop_tables(statement)
-        elif type(statement) == DropDatasource or type(statement) == DropDatabase:
+        elif type(statement) in [DropDatasource, DropDatabase]:
             return self.answer_drop_database(statement)
         elif type(statement) == Describe:
             # NOTE in sql 'describe table' is same as 'show columns'
@@ -178,7 +178,7 @@ class ExecuteCommands:
         elif type(statement) == Show:
             sql_category = statement.category.lower()
             if hasattr(statement, "modes"):
-                if isinstance(statement.modes, list) is False:
+                if not isinstance(statement.modes, list):
                     statement.modes = []
                 statement.modes = [x.upper() for x in statement.modes]
             if sql_category in ("predictors", "models"):
@@ -410,7 +410,6 @@ class ExecuteCommands:
                 )
                 query = SQLQuery(new_statement, session=self.session)
                 return self.answer_select(query)
-            # FIXME if have answer on that request, then DataGrip show warning '[S0022] Column 'Non_unique' not found.'
             elif "show create table" in sql_lower:
                 # SHOW CREATE TABLE `MINDSDB`.`predictors`
                 table = sql[sql.rfind(".") + 1:].strip(" .;\n\t").replace("`", "")
@@ -460,11 +459,7 @@ class ExecuteCommands:
                 query = SQLQuery(new_statement, session=self.session)
                 return self.answer_select(query)
             elif sql_category == "table status":
-                # TODO improve it
-                # SHOW TABLE STATUS LIKE 'table'
-                table_name = None
-                if statement.like is not None:
-                    table_name = statement.like
+                table_name = statement.like if statement.like is not None else None
                 # elif condition == 'from' and type(expression) == Identifier:
                 #     table_name = expression.parts[-1]
                 if table_name is None:
@@ -585,7 +580,6 @@ class ExecuteCommands:
         elif type(statement) == CreateTable:
             # TODO
             return self.answer_apply_predictor(statement)
-        # -- jobs --
         elif type(statement) == CreateJob:
             return self.answer_create_job(statement)
         elif type(statement) == DropJob:
@@ -625,8 +619,8 @@ class ExecuteCommands:
             parts = statement.value.parts.copy()
             attribute = parts.pop(-1)
             model_info = self._get_model_info(Identifier(parts=parts))
-            if model_info is None:
-                raise SqlApiException(f'Model not found: {statement.value}')
+        if model_info is None:
+            raise SqlApiException(f'Model not found: {statement.value}')
 
         df = self.session.model_controller.describe_model(
             self.session, model_info['project_name'], model_info['model_record'].name, attribute
@@ -653,15 +647,17 @@ class ExecuteCommands:
         else:
             return None
 
-        model_record = get_model_record(
-            name=model_name, project_name=database_name, except_absent=except_absent
-        )
-        if not model_record:
+        if model_record := get_model_record(
+            name=model_name,
+            project_name=database_name,
+            except_absent=except_absent,
+        ):
+            return {
+                'model_record': model_record,
+                'project_name': database_name
+            }
+        else:
             return None
-        return {
-            'model_record': model_record,
-            'project_name': database_name
-        }
 
     def _sync_predictor_check(self, phase_name):
         """ Checks if there is already a predictor retraining or fine-tuning
@@ -790,7 +786,7 @@ class ExecuteCommands:
                         # dict: {'path': '/home/file.pem'}
                         # dict: {'url': 'https://host.com/file'}
                         arg_value = connection_args[arg_name]
-                        if isinstance(arg_value, (str, dict)) is False:
+                        if not isinstance(arg_value, (str, dict)):
                             raise SqlApiException(f"Unknown type of arg: '{arg_value}'")
                         if isinstance(arg_value, str) or "path" in arg_value:
                             path = (
@@ -912,10 +908,7 @@ class ExecuteCommands:
         """
         if statement.if_exists is False:
             for table in statement.tables:
-                if len(table.parts) > 1:
-                    db_name = table.parts[0]
-                else:
-                    db_name = self.session.database
+                db_name = table.parts[0] if len(table.parts) > 1 else self.session.database
                 table_name = table.parts[-1]
 
                 if db_name == "files":
@@ -944,10 +937,7 @@ class ExecuteCommands:
                         )
 
         for table in statement.tables:
-            if len(table.parts) > 1:
-                db_name = table.parts[0]
-            else:
-                db_name = self.session.database
+            db_name = table.parts[0] if len(table.parts) > 1 else self.session.database
             table_name = table.parts[-1]
 
             if db_name == "files":
@@ -1009,10 +999,7 @@ class ExecuteCommands:
 
         for name in names:
             view_name = name.parts[-1]
-            if len(name.parts) > 1:
-                db_name = name.parts[0]
-            else:
-                db_name = self.session.database
+            db_name = name.parts[0] if len(name.parts) > 1 else self.session.database
             project = self.session.database_controller.get_project(db_name)
             project.drop_table(view_name)
 
@@ -1059,7 +1046,7 @@ class ExecuteCommands:
 
         predictors_names = [x[0] for x in result["result"]]
 
-        if len(predictors_names) == 0:
+        if not predictors_names:
             raise SqlApiException("nothing to delete")
 
         for predictor_name in predictors_names:
@@ -1166,11 +1153,10 @@ class ExecuteCommands:
                 column_alias = "NULL"
             elif target_type == Identifier:
                 result = ".".join(target.parts)
-                if result == "session_user":
-                    column_name = result
-                    result = self.session.username
-                else:
+                if result != "session_user":
                     raise Exception(f"Unknown column '{result}'")
+                column_name = result
+                result = self.session.username
             else:
                 raise ErSqlWrongArguments(f"Unknown constant type: {target_type}")
 

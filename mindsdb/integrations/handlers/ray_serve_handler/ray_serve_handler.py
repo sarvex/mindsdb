@@ -47,8 +47,7 @@ class RayServeHandler(BaseMLEngine):
                              json={'df': df.to_json(orient='records')},
                              headers={'content-type': 'application/json; format=pandas-records'})
         answer = resp.json()
-        predictions = pd.DataFrame({args['target']: answer['prediction']})
-        return predictions
+        return pd.DataFrame({args['target']: answer['prediction']})
 
     def describe(self, key: Optional[str] = None) -> pd.DataFrame:
         args = self.model_storage.json_get('args')

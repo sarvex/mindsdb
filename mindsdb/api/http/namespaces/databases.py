@@ -23,13 +23,11 @@ class DatabasesResource(Resource):
             abort(HTTPStatus.BAD_REQUEST, 'Must provide "database" parameter in POST body')
         session = SessionController()
         database = request.json['database']
-        parameters = {}
         if 'name' not in database:
             abort(HTTPStatus.BAD_REQUEST, 'Missing "name" field for database')
         if 'engine' not in database:
             abort(HTTPStatus.BAD_REQUEST, 'Missing "engine" field for database. If you want to create a project instead, use the /api/projects endpoint.')
-        if 'parameters' in database:
-            parameters = database['parameters']
+        parameters = database['parameters'] if 'parameters' in database else {}
         name = database['name']
 
         if session.database_controller.exists(name):
@@ -66,10 +64,8 @@ class DatabaseResource(Resource):
             abort(HTTPStatus.BAD_REQUEST, 'Must provide "database" parameter in POST body')
 
         session = SessionController()
-        parameters = {}
         database = request.json['database']
-        if 'parameters' in database:
-            parameters = database['parameters']
+        parameters = database['parameters'] if 'parameters' in database else {}
         if not session.database_controller.exists(database_name):
             # Create.
             if 'engine' not in database:

@@ -59,12 +59,10 @@ class TrinoHandler(DatabaseHandler):
 
         # option configuration
         http_scheme='http'
-        auth=None
         auth_config=None
         password=None
 
-        if 'auth' in self.connection_data:
-            auth=self.connection_data['auth']
+        auth = self.connection_data['auth'] if 'auth' in self.connection_data else None
         if 'password' in self.connection_data:
             password=self.connection_data['password']
         if 'http_scheme' in self.connection_data:
@@ -72,10 +70,11 @@ class TrinoHandler(DatabaseHandler):
         if 'with' in self.connection_data:
            self.with_clause=self.connection_data['with']
 
-        if password and auth=='kerberos':
-            raise Exception("Kerberos authorization doesn't support password.")
-        elif password:
-            auth_config=BasicAuthentication(self.connection_data['user'], password)
+        if password:
+            if auth == 'kerberos':
+                raise Exception("Kerberos authorization doesn't support password.")
+            else:
+                auth_config=BasicAuthentication(self.connection_data['user'], password)
 
         if auth:
             conn = connect(
@@ -114,7 +113,7 @@ class TrinoHandler(DatabaseHandler):
             log.logger.error(f'Error connecting to Trino {self.connection_data["schema"]}, {e}!')
             response.error_message = str(e)
 
-        if response.success is False and self.is_connected is True:
+        if not response.success and self.is_connected is True:
             self.is_connected = False
 
         return response
@@ -177,5 +176,4 @@ class TrinoHandler(DatabaseHandler):
 
     def get_columns(self, table_name: str) -> Dict:
         query = f'DESCRIBE "{table_name}"'
-        response = self.native_query(query)
-        return response
+        return self.native_query(query)

@@ -100,15 +100,16 @@ class IntegrationController:
         if name in self.handler_modules:
             handler = self.handler_modules[name]
 
-            if getattr(handler, 'permanent', False) is True:
+            if getattr(handler, 'permanent', False):
                 raise Exception('Unable to drop: is permanent integration')
 
         integration_record = db.session.query(db.Integration).filter_by(company_id=ctx.company_id, name=name).first()
 
         # if this is ml engine
         engine_models = get_model_records(ml_handler_name=name, deleted_at=None)
-        active_models = [m.name for m in engine_models if m.deleted_at is None]
-        if len(active_models) > 0:
+        if active_models := [
+            m.name for m in engine_models if m.deleted_at is None
+        ]:
             raise Exception(f'Unable to drop ml engine with active models: {active_models}')
 
         # check linked predictors
@@ -201,12 +202,11 @@ class IntegrationController:
 
     def get_all(self, sensitive_info=True):
         integration_records = db.session.query(db.Integration).filter_by(company_id=ctx.company_id).all()
-        integration_dict = {}
-        for record in integration_records:
-            if record is None or record.data is None:
-                continue
-            integration_dict[record.name] = self._get_integration_record_data(record, sensitive_info)
-        return integration_dict
+        return {
+            record.name: self._get_integration_record_data(record, sensitive_info)
+            for record in integration_records
+            if record is not None and record.data is not None
+        }
 
     def check_connections(self):
         connections = {}
@@ -294,12 +294,12 @@ class IntegrationController:
         )
 
         if isinstance(connection_args, (dict, OrderedDict)):
-            files_to_get = {
-                arg_name: arg_value for arg_name, arg_value in connection_data.items()
-                if arg_name in connection_args and connection_args.get(arg_name)['type'] == ARG_TYPE.PATH
-            }
-            if len(files_to_get) > 0:
-
+            if files_to_get := {
+                arg_name: arg_value
+                for arg_name, arg_value in connection_data.items()
+                if arg_name in connection_args
+                and connection_args.get(arg_name)['type'] == ARG_TYPE.PATH
+            }:
                 for file_name, file_path in files_to_get.items():
                     connection_data[file_name] = fs_store.get_path(file_path)
 
@@ -324,14 +324,12 @@ class IntegrationController:
             handler_ars['execution_method'] = getattr(self.handler_modules[integration_engine], 'execution_method', None)
             handler_ars['integration_engine'] = integration_engine
             logger.info("%s.get_handler: create a ML client, params - %s", self.__class__.__name__, handler_ars)
-            handler = BaseMLEngineExec(**handler_ars)
-            # handler = MLClient(**handler_ars)
+            return BaseMLEngineExec(**handler_ars)
+                # handler = MLClient(**handler_ars)
         else:
 
             logger.info("%s.get_handler: create a client to db service of %s type, args - %s", self.__class__.__name__, integration_engine, handler_ars)
-            handler = DBClient(integration_engine, **handler_ars)
-
-        return handler
+            return DBClient(integration_engine, **handler_ars)
 
     def reload_handler_module(self, handler_name):
         importlib.reload(self.handler_modules[handler_name])
@@ -364,9 +362,7 @@ class IntegrationController:
         dependencies = self._read_dependencies(handler_dir)
 
         self.handler_modules[module.name] = module
-        import_error = None
-        if hasattr(module, 'import_error'):
-            import_error = module.import_error
+        import_error = module.import_error if hasattr(module, 'import_error') else None
         handler_meta = {
             'import': {
                 'success': import_error is None,
@@ -406,11 +402,11 @@ class IntegrationController:
         if hasattr(module, 'permanent'):
             handler_meta['permanent'] = module.permanent
         else:
-            if handler_meta.get('name') in ('files', 'views', 'lightwood'):
-                handler_meta['permanent'] = True
-            else:
-                handler_meta['permanent'] = False
-
+            handler_meta['permanent'] = handler_meta.get('name') in (
+                'files',
+                'views',
+                'lightwood',
+            )
         return handler_meta
 
     def _load_handler_modules(self):
@@ -428,8 +424,7 @@ class IntegrationController:
                 handler_meta = self._get_handler_meta(handler_module)
             except Exception as e:
                 handler_name = handler_folder_name
-                if handler_name.endswith('_handler'):
-                    handler_name = handler_name[:-8]
+                handler_name = handler_name.removesuffix('_handler')
                 dependencies = self._read_dependencies(handler_dir)
                 handler_meta = {
                     'import': {

@@ -43,7 +43,7 @@ def get_season_length(frequency):
         "BH": 24,
     }
     new_freq = frequency.split("-")[0] if "-" in frequency else frequency  # shortens longer frequencies like Q-DEC
-    return season_dict[new_freq] if new_freq in season_dict else 1
+    return season_dict.get(new_freq, 1)
 
 
 def get_insample_cv_results(model_args, df):
@@ -94,15 +94,18 @@ class StatsForecastHandler(BaseMLEngine):
         using_args = args["using"]
         assert time_settings["is_timeseries"], "Specify time series settings in your query"
         ###### store model args and time series settings in the model folder
-        model_args = {}
-        model_args["target"] = target
-        model_args["horizon"] = time_settings["horizon"]
-        model_args["order_by"] = time_settings["order_by"]
-        model_args["group_by"] = time_settings["group_by"]
-        model_args["frequency"] = (
-            using_args["frequency"] if "frequency" in using_args else infer_frequency(df, time_settings["order_by"])
-        )
-        model_args["hierarchy"] = using_args["hierarchy"] if "hierarchy" in using_args else False
+        model_args = {
+            "target": target,
+            "horizon": time_settings["horizon"],
+            "order_by": time_settings["order_by"],
+            "group_by": time_settings["group_by"],
+            "frequency": using_args["frequency"]
+            if "frequency" in using_args
+            else infer_frequency(df, time_settings["order_by"]),
+            "hierarchy": using_args["hierarchy"]
+            if "hierarchy" in using_args
+            else False,
+        }
         if model_args["hierarchy"]:
             training_df, hier_df, hier_dict = get_hierarchy_from_df(df, model_args)
             self.model_storage.file_set("hier_dict", dill.dumps(hier_dict))
@@ -168,7 +171,7 @@ class StatsForecastHandler(BaseMLEngine):
         elif attribute == 'info':
             outputs = model_args["target"]
             inputs = [model_args["target"], model_args["order_by"], model_args["group_by"]]
-            accuracies = [(model, acc) for model, acc in model_args["accuracies"].items()]
+            accuracies = list(model_args["accuracies"].items())
             return pd.DataFrame({"accuracies": [accuracies], "outputs": outputs, "inputs": [inputs]})
 
         else:

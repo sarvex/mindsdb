@@ -38,11 +38,7 @@ class SolrHandler(DatabaseHandler):
             if parameter not in connection_data:
                 connection_data[parameter] = None
 
-        if connection_data.get('use_ssl', False):
-            connection_data['use_ssl'] = True
-        else:
-            connection_data['use_ssl'] = False
-
+        connection_data['use_ssl'] = bool(connection_data.get('use_ssl', False))
         self.connection_data = connection_data
         self.kwargs = kwargs
 
@@ -104,9 +100,9 @@ class SolrHandler(DatabaseHandler):
             log.logger.error(f'Error connecting to Solr {self.connection_data["host"]}, {e}!')
             response.error_message = str(e)
 
-        if response.success is True and need_to_close:
+        if response.success and need_to_close:
             self.disconnect()
-        if response.success is False and self.is_connected is True:
+        if not response.success and self.is_connected is True:
             self.is_connected = False
 
         return response
@@ -145,7 +141,7 @@ class SolrHandler(DatabaseHandler):
                 error_message=str(e)
             )
 
-        if need_to_close is True:
+        if need_to_close:
             self.disconnect()
 
         return response
@@ -160,8 +156,7 @@ class SolrHandler(DatabaseHandler):
         """
         Get a list with all of the tables in Solr
         """
-        result = {}
-        result['data_frame'] = pd.DataFrame([self.connection_data.get('collection')])
+        result = {'data_frame': pd.DataFrame([self.connection_data.get('collection')])}
         df = result.data_frame
         result.data_frame = df.rename(columns={df.columns[0]: 'table_name'})
         return result

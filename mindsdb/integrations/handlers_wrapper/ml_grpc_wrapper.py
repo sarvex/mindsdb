@@ -48,12 +48,11 @@ class MLServiceServicer(ml_pb2_grpc.MLServiceServicer):
         return IntegrationController()
 
     def _get_file_storage(self, integration_id):
-        fs_store = FileStorage(
+        return FileStorage(
             resource_group=RESOURCE_GROUP.INTEGRATION,
             resource_id=integration_id,
             sync=True,
         )
-        return fs_store
 
     def _get_storage_factory(self):
         return FileStorageFactory(resource_group=RESOURCE_GROUP.PREDICTOR, sync=True)
@@ -81,12 +80,9 @@ class MLServiceServicer(ml_pb2_grpc.MLServiceServicer):
         handlerStorage = HandlerStorage(integration_id)
         modelStorage = ModelStorage(predictor_id)
 
-        ml_handler = HandlerClass(
-            engine_storage=handlerStorage,
-            model_storage=modelStorage,
-            **params
+        return HandlerClass(
+            engine_storage=handlerStorage, model_storage=modelStorage, **params
         )
-        return ml_handler
 
     def Predict(self, request, context):
         result = None

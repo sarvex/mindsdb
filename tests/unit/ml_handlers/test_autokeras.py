@@ -26,7 +26,7 @@ class TestAutokeras(BaseExecutorTest):
     def wait_predictor(self, project, name):
         # wait
         done = False
-        for attempt in range(200):
+        for _ in range(200):
             ret = self.run_sql(f"select * from {project}.models where name='{name}'")
             if not ret.empty:
                 if ret["STATUS"][0] == "complete":

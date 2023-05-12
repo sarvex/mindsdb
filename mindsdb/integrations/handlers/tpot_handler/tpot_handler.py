@@ -46,7 +46,5 @@ class TPOTHandler(BaseMLEngine):
 
         model=dill.loads(self.model_storage.file_get("model"))
         target=self.model_storage.json_get('args').get("target")
-        
-        results=pd.DataFrame(model.predict(df),columns=[target])
-        
-        return results
+
+        return pd.DataFrame(model.predict(df),columns=[target])

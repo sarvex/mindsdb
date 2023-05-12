@@ -15,7 +15,7 @@ class TestProjectStructure(BaseExecutorDummyML):
     def wait_predictor(self, project, name, filter=None):
         # wait
         done = False
-        for attempt in range(200):
+        for _ in range(200):
             sql = f"select * from {project}.models_versions where name='{name}'"
             if filter is not None:
                 for k, v in filter.items():
@@ -46,10 +46,7 @@ class TestProjectStructure(BaseExecutorDummyML):
             return pd.DataFrame(ret.data, columns=columns)
 
     def get_models(self):
-        models = {}
-        for p in self.db.Predictor.query.all():
-            models[p.id] = p
-        return models
+        return {p.id: p for p in self.db.Predictor.query.all()}
 
     @patch('mindsdb.integrations.handlers.postgres_handler.Handler')
     def test_version_managing(self, data_handler):
